@@ -17,6 +17,7 @@ import type { SynchronisationInfo } from '/@shared/src/models/synchronisation';
 import { TelemetryEvents } from '../utils/telemetry-events';
 import { QuadletType } from '/@shared/src/utils/quadlet-type';
 import { QuadletKubeParser } from '../utils/parsers/quadlet-kube-parser';
+import { isRunError } from '../utils/run-error-utils';
 
 export class QuadletService extends QuadletHelper implements Disposable, AsyncInit {
   #extensionsEventDisposable: Disposable | undefined;
@@ -110,6 +111,7 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
       connection: provider,
       args: ['-version'],
     });
+    if(isRunError(result)) throw new Error(`cannot get quadlet version with command ${result.command} got exit code ${result.exitCode}: ${result.stderr}`);
     return result.stdout;
   }
 
@@ -128,6 +130,9 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
       connection: options.provider,
       args,
     });
+    if(isRunError(result)) {
+      console.error('Some quadlets could not be parsed', result);
+    }
 
     const parser = new QuadletDryRunParser(result.stdout);
     return parser.parse();

@@ -16,6 +16,7 @@ import type { AsyncInit } from '../utils/async-init';
 import { dirname } from 'node:path/posix';
 import { writeFile, mkdir, readFile, rm } from 'node:fs/promises';
 import { homedir } from 'node:os';
+import { isRunError } from '../utils/run-error-utils';
 
 export class PodmanService extends PodmanHelper implements Disposable, AsyncInit {
   #extensionsEventDisposable: Disposable | undefined;
@@ -203,10 +204,16 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
     logger?: Logger;
     token?: CancellationToken;
     env?: Record<string, string>;
-  }): Promise<RunResult> {
+  }): Promise<RunResult | RunError> {
     return this.executeWrapper({
       ...options,
       command: '/usr/libexec/podman/quadlet',
+    }).catch((err: unknown) => {
+      // check err is an RunError
+      if (isRunError(err)) {
+        return err;
+      }
+      throw err;
     });
   }
 
@@ -239,10 +246,10 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
       command: 'systemctl',
     }).catch((err: unknown) => {
       // check err is an RunError
-      if (!err || typeof err !== 'object' || !('exitCode' in err)) {
-        throw err;
+      if (isRunError(err)) {
+        return err;
       }
-      return err as RunError;
+      throw err;
     });
   }
 
