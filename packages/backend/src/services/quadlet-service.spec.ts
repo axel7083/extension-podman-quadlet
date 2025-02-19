@@ -444,3 +444,41 @@ describe('QuadletService#getSynchronisationInfo', () => {
     expect(sync).toHaveLength(1);
   });
 });
+
+
+describe('QuadletService#isQuadletPath', () => {
+  test.each<{
+    result: boolean,
+    path: string,
+  }>([{
+    path: '/foo/bar.yaml',
+    result: false,
+  },
+    {
+      path: '/foo/bar.image',
+      result: true,
+    },
+    {
+      path: '/foo/bar.container',
+      result: true,
+    },
+    {
+      path: '/foo/bar.build',
+      result: true,
+    },
+    {
+      path: '/foo/bar.kube',
+      result: true,
+    },
+    {
+      path: '/foo/bar.network',
+      result: true,
+    },
+    {
+      path: '/foo/bar',
+      result: false,
+    }])('expect isQuadletPath($path) to return $result', ({ result, path }) => {
+    const quadlet = getQuadletService();
+    expect(quadlet.isQuadletPath(path)).toBe(result);
+  });
+});

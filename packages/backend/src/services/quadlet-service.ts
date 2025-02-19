@@ -18,6 +18,8 @@ import { TelemetryEvents } from '../utils/telemetry-events';
 import { QuadletType } from '/@shared/src/utils/quadlet-type';
 import { QuadletKubeParser } from '../utils/parsers/quadlet-kube-parser';
 import { isRunError } from '../utils/run-error-utils';
+import { QuadletExtensionParser } from '../utils/parsers/quadlet-extension-parser';
+import { randomUUID } from 'node:crypto';
 
 export class QuadletService extends QuadletHelper implements Disposable, AsyncInit {
   #extensionsEventDisposable: Disposable | undefined;
@@ -58,6 +60,14 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
     const symbol = this.getSymbol(options.provider);
     // find in corresponding quadlets
     return this.#value.get(symbol)?.find(quadlet => quadlet.id === options.id);
+  }
+
+  protected getQuadletDirectory(options: { admin?: boolean }): string {
+    if (options.admin) {
+      return '/etc/containers/systemd/';
+    } else {
+      return '~/.config/containers/systemd/';
+    }
   }
 
   /**
@@ -115,6 +125,18 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
     return result.stdout;
   }
 
+  /**
+   * Given a path (E.g. /potatoes/foo.image) return true if the path match a quadlet file (.image, .network, .build etc.)
+   * @param path
+   * @protected
+   */
+  public isQuadletPath(path: string): boolean {
+    const parts = basename(path).split('.');
+    // get last part of the path (hello.potatoes) => potatoes
+    const extension: string = parts[parts.length - 1];
+    return Object.values(QuadletType).map((type) => type.toLowerCase()).includes(extension);
+  }
+
   protected async getPodmanQuadlets(options: {
     provider: ProviderContainerConnection;
     /**
@@ -126,16 +148,48 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
     if (!options.admin) {
       args.push('-user');
     }
+
+    // execute quadlet dryrun
     const result = await this.podman.quadletExec({
       connection: options.provider,
       args,
     });
+
+    // parse stdout
+    const parser = new QuadletDryRunParser(result.stdout);
+    const quadlets: Quadlet[] = parser.parse();
+
+    // if we have some errors in the quadlet generator
     if(isRunError(result)) {
       console.error('Some quadlets could not be parsed', result);
+      // let's find problematic quadlet
+      const entries = await this.podman.listDirectoryContent(options.provider, this.getQuadletDirectory(options));
+      console.log(`entries ${entries.length}:`, entries);
+
+      const files: Set<string> = new Set(entries.filter((entry) => entry.type === 'file' && this.isQuadletPath(entry.path)).map((entry) => entry.path));
+      console.log(`files ${files.size}:`, files);
+
+      const validQuadlets: Set<string> = new Set(quadlets.map((quadlet) => (quadlet.path)));
+      console.log(`validQuadlets ${validQuadlets.size}:`, validQuadlets);
+
+      const diff = files.difference(validQuadlets);
+      console.log('diff ', diff);
+
+      if(diff.size > 0) {
+        console.error('invalid quadlets found');
+        for (const item of diff) {
+          quadlets.push({
+            state: 'error',
+            path: item,
+            id: randomUUID(),
+            content: '',
+            type: new QuadletExtensionParser(item).parse(),
+          });
+        }
+      }
     }
 
-    const parser = new QuadletDryRunParser(result.stdout);
-    return parser.parse();
+    return quadlets;
   }
 
   async collectPodmanQuadlet(): Promise<void> {
@@ -202,6 +256,10 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
    */
   async refreshQuadletsStatuses(notify = true): Promise<void> {
     for (const [symbol, quadlets] of Array.from(this.#value.entries())) {
+      // We should only refresh the statuses of quadlets with a corresponding services.
+      // Some quadlets may be in an error state
+      const filtered = quadlets.filter((quadlet): quadlet is Quadlet & { service: string } => !!quadlet.service);
+
       // retreive the provider from the symbol
       const providerIdentifier = this.fromSymbol(symbol);
       const provider = this.providers.getProviderContainerConnection(providerIdentifier);
@@ -210,15 +268,13 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
       const statuses = await this.dependencies.systemd.getActiveStatus({
         provider: provider,
         admin: false,
-        services: quadlets.map(quadlet => quadlet.id),
+        services: filtered.map(quadlet => quadlet.service),
       });
 
       // update each quadlets
       for (const quadlet of quadlets) {
         if (quadlet.id in statuses) {
           quadlet.state = statuses[quadlet.id] ? 'active' : 'inactive';
-        } else {
-          quadlet.state = 'unknown';
         }
       }
 
@@ -344,12 +400,7 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
             }
 
             // 1. write the file into the podman machine
-            let destination: string;
-            if (options.admin) {
-              destination = joinposix('/etc/containers/systemd/', resource.filename);
-            } else {
-              destination = joinposix('~/.config/containers/systemd/', resource.filename);
-            }
+            const destination: string = joinposix(this.getQuadletDirectory(options), resource.filename);
 
             // 2. write the file
             try {

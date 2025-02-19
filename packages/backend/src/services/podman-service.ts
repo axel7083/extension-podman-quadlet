@@ -13,10 +13,15 @@ import { CancellationTokenSource } from '@podman-desktop/api';
 import type { PodmanDependencies } from './podman-helper';
 import { PodmanHelper } from './podman-helper';
 import type { AsyncInit } from '../utils/async-init';
-import { dirname } from 'node:path/posix';
-import { writeFile, mkdir, readFile, rm } from 'node:fs/promises';
+import { dirname, join as posixjoin } from 'node:path/posix';
+import { writeFile, mkdir, readFile, rm, readdir } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { isRunError } from '../utils/run-error-utils';
+
+export interface DirEntry {
+  type: 'file' | 'directory',
+  path: string,
+}
 
 export class PodmanService extends PodmanHelper implements Disposable, AsyncInit {
   #extensionsEventDisposable: Disposable | undefined;
@@ -106,6 +111,41 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
       connection: connection,
       args: [path],
       command: `rm`,
+    });
+  }
+
+  async listDirectoryContent(connection: ProviderContainerConnection, path: string): Promise<Array<DirEntry>> {
+    // linux native special case
+    if (this.isLinux && connection.connection.vmType === undefined) {
+      console.debug('[PodmanService] native connection using node:fs');
+      const entries = await readdir(path, { recursive: false, withFileTypes: true });
+      return entries.map((entry) => ({
+        type: entry.isFile()?'file':'directory',
+        path: posixjoin(path, entry.name),
+      }));
+    }
+
+    // using `ls -F | sed 's/\*$//'` to list by line each element
+    // to differentiate the folders from the file, we use -F option to add a trailing / to directories
+    const result = await this.executeWrapper({
+      connection: connection,
+      args: [`-d -F -1 ${path}${path.endsWith('/')?'':'/'}*`],
+      command: `ls`,
+    });
+    const lines = result.stdout.split('\n');
+    return lines.map((line) => {
+      const trimmed = line.trim();
+      if(trimmed.endsWith('/')) {
+        return {
+          type: 'directory',
+          path: trimmed.substring(0, trimmed.length - 1), // remove the trailing /
+        };
+      } else {
+        return {
+          type: 'file',
+          path: trimmed,
+        };
+      }
     });
   }
 

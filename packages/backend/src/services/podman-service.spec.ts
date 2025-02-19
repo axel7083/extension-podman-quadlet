@@ -18,15 +18,17 @@ import { PodmanService } from './podman-service';
 import type { PodmanExtensionApi } from '@podman-desktop/podman-extension-api';
 import { PODMAN_EXTENSION_ID } from '../utils/constants';
 import type { ProviderService } from './provider-service';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path/posix';
+import type { Dirent } from 'node:fs';
 
 vi.mock('node:fs/promises', () => ({
   writeFile: vi.fn(),
   mkdir: vi.fn(),
   readFile: vi.fn(),
   rm: vi.fn(),
+  readdir: vi.fn(),
 }));
 
 vi.mock('node:os', () => ({
@@ -293,6 +295,69 @@ describe('writeTextFile', () => {
 
     expect(podmanExtensionApiMock.exports.exec).toHaveBeenCalledWith(
       ['machine', 'ssh', WSL_PROVIDER_CONNECTION_MOCK.connection.name, `echo "${content}" > ${destination}`],
+      {
+        connection: WSL_PROVIDER_CONNECTION_MOCK,
+        token: expect.anything(),
+      },
+    );
+  });
+});
+
+describe('listDirectoryContent', () => {
+  const PATH = '~/.config/containers/systemd';
+
+  test('linux', async () => {
+    vi.mocked(readdir).mockResolvedValue([
+      {
+        name: 'dummy-file',
+        isFile: () => true,
+      } as Dirent,
+      {
+        name: 'dummy-dir',
+        isFile: () => false,
+      } as Dirent,
+    ]);
+
+    const podman = getPodmanService({
+      isLinux: true,
+    });
+    const entries = await podman.listDirectoryContent(NATIVE_PROVIDER_CONNECTION_MOCK, PATH);
+    expect(entries).toStrictEqual([{
+      type: 'file',
+      path: join(PATH, 'dummy-file'),
+    },
+      {
+        type: 'directory',
+        path: join(PATH, 'dummy-dir'),
+      }]);
+    // on native, we use directory node:fs methods
+    expect(podmanExtensionApiMock.exports.exec).not.toHaveBeenCalled();
+  });
+
+  test.each(['windows', 'mac'])('%s', async platform => {
+    vi.mocked(podmanExtensionApiMock.exports.exec).mockResolvedValue({
+      stdout: 'dummy-file\ndummy-dir/',
+      stderr: '',
+      command: '',
+    });
+    const podman = getPodmanService({
+      isWindows: platform === 'windows',
+      isMac: platform === 'mac',
+    });
+
+    const entries = await podman.listDirectoryContent(WSL_PROVIDER_CONNECTION_MOCK, PATH);
+    expect(entries).toStrictEqual([{
+      type: 'file',
+      path: join(PATH, 'dummy-file'),
+    },
+      {
+        type: 'directory',
+        path: join(PATH, 'dummy-dir'),
+      }]);
+
+    // on non-native, should use the podman#exec
+    expect(podmanExtensionApiMock.exports.exec).toHaveBeenCalledWith(
+      ['machine', 'ssh', WSL_PROVIDER_CONNECTION_MOCK.connection.name, 'ls ls -F | sed \'s/\\*$//\''],
       {
         connection: WSL_PROVIDER_CONNECTION_MOCK,
         token: expect.anything(),
