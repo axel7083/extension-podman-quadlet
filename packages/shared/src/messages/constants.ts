@@ -2,6 +2,7 @@ import { getChannel } from './utils';
 import { PodletApi } from '../apis/podlet-api';
 import { QuadletApi } from '../apis/quadlet-api';
 import { DialogApi } from '../apis/dialog-api';
+import { ProjectApi } from '../apis/project-api';
 
 export const noTimeoutChannels: string[] = [
   getChannel(PodletApi, 'install'),
@@ -11,4 +12,5 @@ export const noTimeoutChannels: string[] = [
   getChannel(DialogApi, 'showInformationMessage'),
   getChannel(QuadletApi, 'start'),
   getChannel(QuadletApi, 'updateIntoMachine'),
+  getChannel(ProjectApi, 'loadIntoMachine'),
 ];

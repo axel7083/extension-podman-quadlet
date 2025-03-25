@@ -322,6 +322,40 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
   }
 
   /**
+   * @experimental
+   * @remarks do not create a task
+   * @param options
+   */
+  async saveResources(options: {
+    resources: Array<{ filename: string; content: string; }>,
+    provider: ProviderContainerConnection;
+    /**
+     * @default false (Run as systemd user)
+     */
+    admin?: boolean;
+  }): Promise<void> {
+    // for each resource
+    for (const resource of options.resources) {
+      // 1. write the file into the podman machine
+      let destination: string;
+      if (options.admin) {
+        destination = joinposix('/etc/containers/systemd/', resource.filename);
+      } else {
+        destination = joinposix('~/.config/containers/systemd/', resource.filename);
+      }
+
+      // 2. write the file
+      try {
+        console.debug(`[QuadletService] writing quadlet file to ${destination}`);
+        await this.dependencies.podman.writeTextFile(options.provider, destination, resource.content);
+      } catch (err: unknown) {
+        console.error(`Something went wrong while trying to write file to ${destination}`, err);
+        throw err;
+      }
+    }
+  }
+
+  /**
    * This method differ from {@link updateIntoMachine} it aims to create a new Quadlet file
    * @param options The options.quadlet can contain multiple resources.
    */
@@ -349,31 +383,10 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
           console.debug(`saving into machine: found ${resources.length} resources`);
           telemetry['resources-length'] = resources.length;
 
-          // for each resource
-          for (const resource of resources) {
-            // keep track of the type we create
-            if (resource.type) {
-              const key = `quadlet-${resource.type.toLowerCase()}`;
-              telemetry[key] = (typeof telemetry[key] !== 'number' ? 0 : telemetry[key]) + 1;
-            }
-
-            // 1. write the file into the podman machine
-            let destination: string;
-            if (options.admin) {
-              destination = joinposix('/etc/containers/systemd/', resource.filename);
-            } else {
-              destination = joinposix('~/.config/containers/systemd/', resource.filename);
-            }
-
-            // 2. write the file
-            try {
-              console.debug(`[QuadletService] writing quadlet file to ${destination}`);
-              await this.dependencies.podman.writeTextFile(options.provider, destination, resource.content);
-            } catch (err: unknown) {
-              console.error(`Something went wrong while trying to write file to ${destination}`, err);
-              throw err;
-            }
-          }
+          await this.saveResources({
+            ...options,
+            resources: resources,
+          });
 
           // 3. reload
           await this.dependencies.systemd.daemonReload({

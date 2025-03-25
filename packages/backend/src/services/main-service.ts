@@ -252,6 +252,8 @@ export class MainService implements Disposable, AsyncInit {
     // project api
     const projectApiImpl = new ProjectApiImpl({
       projects: projects,
+      quadlets: quadletService,
+      providers: providers,
     });
     rpcExtension.registerInstance<ProjectApi>(ProjectApi, projectApiImpl);
   }

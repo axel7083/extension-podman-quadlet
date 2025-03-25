@@ -25,6 +25,8 @@ function close(): void {
   breadcrumbTitle="Go back to quadlets page"
   onbreadcrumbClick={close}>
   <svelte:fragment slot="content">
-    <TemplateGrid onImport={onImportTemplate.bind(undefined)}/>
+    <div class="mx-5">
+      <TemplateGrid onImport={onImportTemplate.bind(undefined)}/>
+    </div>
   </svelte:fragment>
 </FormPage>
