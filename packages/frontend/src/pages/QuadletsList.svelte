@@ -2,7 +2,7 @@
 import { Button, Table, TableColumn, TableRow, NavPage, TableSimpleColumn } from '@podman-desktop/ui-svelte';
 import type { QuadletInfo } from '/@shared/src/models/quadlet-info';
 import QuadletStatus from '../lib/table/QuadletStatus.svelte';
-import { dialogAPI, quadletAPI } from '../api/client';
+import { dialogAPI, projectAPI, quadletAPI } from '../api/client';
 import QuadletActions from '../lib/table/QuadletActions.svelte';
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons/faArrowsRotate';
 import { quadletsInfo } from '/@store/quadlets';
@@ -11,6 +11,7 @@ import ContainerProviderConnectionSelect from '/@/lib/select/ContainerProviderCo
 import { providerConnectionsInfo } from '/@store/connections';
 import type { ProviderContainerConnectionDetailedInfo } from '/@shared/src/models/provider-container-connection-detailed-info';
 import { faCode } from '@fortawesome/free-solid-svg-icons/faCode';
+import { faPencil } from '@fortawesome/free-solid-svg-icons/faPencil';
 import MachineBadge from '/@/lib/table/MachineBadge.svelte';
 import type { ProviderContainerConnectionIdentifierInfo } from '/@shared/src/models/provider-container-connection-identifier-info';
 import EmptyQuadletList from '/@/lib/empty-screen/EmptyQuadletList.svelte';
@@ -46,7 +47,30 @@ const columns = [
   }),
   new TableColumn<QuadletInfo>('Actions', { align: 'right', width: '120px', renderer: QuadletActions }),
 ];
-const row = new TableRow<QuadletInfo>({ selectable: (_service): boolean => true });
+
+let services: Map<string, QuadletInfo> = $derived(new Map(
+  $quadletsInfo
+    // remove quadlets without service
+    .filter((quadlet): quadlet is QuadletInfo & { service: string } => !!quadlet.service)
+    // map service name => quadlet info
+    .map((quadlet) => [quadlet.service, quadlet])
+));
+const row = new TableRow<QuadletInfo>({
+  selectable: (_service): boolean => true,
+  children: (service: QuadletInfo): Array<QuadletInfo & { parent: string }> => {
+    return service.requires.reduce((accumulator: Array<QuadletInfo & { parent: string }>, current: string) => {
+      const quadlet = services.get(current);
+      if(quadlet) {
+        accumulator.push({
+          ...quadlet,
+          parent: service.id,
+        });
+      }
+
+      return accumulator;
+    }, []);
+  },
+});
 
 let loading: boolean = $state(false);
 // considered disable if there is no connection running or loading
@@ -80,13 +104,33 @@ let data: (QuadletInfo & { selected?: boolean })[] = $derived(
     }
 
     return match;
-  }, [] as QuadletInfo[]),
+  }, [] as QuadletInfo[]).map((quadlet) => ({
+    ...quadlet,
+    name: quadlet.service ?? quadlet.path,
+  })),
 );
 
 let empty: boolean = $derived(data.length === 0);
 
 function navigateToGenerate(): void {
   router.goto('/quadlets/generate');
+}
+
+async function onCreateRequest(): Promise<void> {
+  const result = await dialogAPI.showInformationMessage('Create Quadlet', 'Using Template', 'From Scratch');
+
+  // handle cancel case
+  if(!result) return;
+
+  if(result === 'Using Template') {
+    router.goto('/projects/templates/');
+    return;
+  }
+
+  if(result === 'From Scratch') {
+    const { id } = await projectAPI.create();
+    router.goto(`/projects/editor/${id}?draft=true`);
+  }
 }
 
 async function deleteSelected(): Promise<void> {
@@ -126,6 +170,8 @@ async function deleteSelected(): Promise<void> {
 
 <NavPage title="Podman Quadlets" searchEnabled={true} bind:searchTerm={searchTerm}>
   <svelte:fragment slot="additional-actions">
+    <Button icon={faPencil} disabled={disabled} title="Create Quadlet" on:click={onCreateRequest}
+      >Create Quadlet</Button>
     <Button icon={faCode} disabled={disabled} title="Generate Quadlet" on:click={navigateToGenerate}
       >Generate Quadlet</Button>
     <Button

@@ -12,6 +12,7 @@ import { Messages } from '/@shared/src/messages';
 import type { Unsubscriber } from 'svelte/store';
 import QuadletGenerate from '/@/pages/QuadletGenerate.svelte';
 import QuadletCompose from '/@/pages/QuadletCompose.svelte';
+import ProjectsIndex from '/@/pages/projects/Index.svelte';
 
 router.mode.hash();
 let isMounted = $state(false);
@@ -35,7 +36,7 @@ onDestroy(() => {
 });
 </script>
 
-<Route path="/*" breadcrumb="" isAppMounted={isMounted} let:meta>
+<Route path="/*" breadcrumb="" isAppMounted={isMounted}>
   <main class="flex flex-col w-screen h-screen overflow-hidden bg-[var(--pd-content-bg)]">
     <div class="flex flex-row w-full h-full overflow-hidden">
       <!-- list all quadlets -->
@@ -43,7 +44,11 @@ onDestroy(() => {
         <QuadletsList />
       </Route>
 
-      <!-- create quadlet -->
+      <Route path="/projects/*" breadcrumb="Projects">
+        <ProjectsIndex />
+      </Route>
+
+      <!-- create quadlet from existing resources -->
       <Route path="/quadlets/generate/*" firstmatch let:meta>
         <QuadletGenerate
           providerId={meta.query.providerId}

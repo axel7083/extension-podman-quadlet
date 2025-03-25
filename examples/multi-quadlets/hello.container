@@ -1,0 +1,7 @@
+# hello.container
+[Container]
+Image=nginx.image
+PublishPort=8888:80
+
+[Service]
+Restart=always

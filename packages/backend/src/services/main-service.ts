@@ -45,6 +45,9 @@ import { LoggerApi } from '/@shared/src/apis/logger-api';
 import { DialogService } from './dialog-service';
 import { DialogApiImpl } from '../apis/dialog-api-impl';
 import { DialogApi } from '/@shared/src/apis/dialog-api';
+import { ProjectService } from './project-service';
+import { ProjectApiImpl } from '../apis/project-api-impl';
+import { ProjectApi } from '/@shared/src/apis/project-api';
 
 interface Dependencies {
   extensionContext: ExtensionContext;
@@ -186,6 +189,9 @@ export class MainService implements Disposable, AsyncInit {
     await command.init();
     this.#disposables.push(command);
 
+    const projects = new ProjectService();
+    this.#disposables.push(projects);
+
     /**
      * Creating the api for the frontend IPCs
      */
@@ -242,5 +248,11 @@ export class MainService implements Disposable, AsyncInit {
       dialog: dialog,
     });
     rpcExtension.registerInstance<DialogApi>(DialogApi, dialogApiImpl);
+
+    // project api
+    const projectApiImpl = new ProjectApiImpl({
+      projects: projects,
+    });
+    rpcExtension.registerInstance<ProjectApi>(ProjectApi, projectApiImpl);
   }
 }
