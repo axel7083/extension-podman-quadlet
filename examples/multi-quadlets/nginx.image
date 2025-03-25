@@ -1,0 +1,5 @@
+# nginx.image
+[Image]
+Arch=amd64
+Image=docker.io/library/nginx:latest
+OS=linux
