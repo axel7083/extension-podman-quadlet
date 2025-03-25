@@ -1,7 +1,7 @@
 <script lang="ts">
 import type * as Monaco from 'monaco-editor';
 import { onMount, onDestroy } from 'svelte';
-import { Button, DetailsPage, Tab } from '@podman-desktop/ui-svelte';
+import { Button, DetailsPage } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 import { dialogAPI, projectAPI } from '/@/api/client';
 import type { Project } from '/@shared/src/models/project';
@@ -15,6 +15,11 @@ import ListItemButtonIcon from '/@/lib/buttons/ListItemButtonIcon.svelte';
 import Fa from 'svelte-fa';
 import EditableTab from '/@/lib/pagination/EditableTab.svelte';
 import { faSave } from '@fortawesome/free-solid-svg-icons/faSave';
+import ContainerProviderConnectionSelect from '/@/lib/select/ContainerProviderConnectionSelect.svelte';
+import type {
+  ProviderContainerConnectionDetailedInfo,
+} from '/@shared/src/models/provider-container-connection-detailed-info';
+import { providerConnectionsInfo } from '/@store/connections';
 
 interface Props {
   projectId: string;
@@ -22,11 +27,9 @@ interface Props {
 
 let { projectId }: Props = $props();
 
+let containerProviderConnection: ProviderContainerConnectionDetailedInfo | undefined = $state(undefined);
 let project: Project | undefined = $state();
-let loading: boolean = $derived(!project);
-
-// the editor is dirty is not sync with backend
-let dirty: boolean = $state(true);
+let loading: boolean = $state(false);
 
 let models: Array<Monaco.editor.ITextModel> = $state([]);
 
@@ -36,7 +39,6 @@ function navigateToModel(model: Monaco.editor.ITextModel): void {
 
 onMount(async () => {
   project = await projectAPI.read(projectId);
-  dirty = false;
 
   // init models
   const monaco = await MonacoManager.getMonaco();
@@ -108,7 +110,20 @@ async function onNewFileRequest(): Promise<void> {
 }
 
 async function loadIntoMachine(): Promise<void> {
-  alert('not implemented yet (oupsi)');
+  if(!containerProviderConnection || !project) return;
+
+  try {
+    loading = true;
+    await updateProject();
+    await projectAPI.loadIntoMachine({
+      projectId: project.id,
+      provider: $state.snapshot(containerProviderConnection),
+    });
+    // redirect to home
+    router.goto('/');
+  } finally {
+    loading = false;
+  }
 }
 
 async function onFileDelete(model: Monaco.editor.ITextModel): Promise<void> {
@@ -179,7 +194,15 @@ async function updateProject(): Promise<void> {
   </svelte:fragment>
   <svelte:fragment slot="actions">
     <ListItemButtonIcon icon={faSave} onClick={updateProject} title="Save" />
-    <ListItemButtonIcon icon={faTruckPickup} onClick={loadIntoMachine} title="Load into machine" />
+
+    <div class="w-[250px]">
+      <ContainerProviderConnectionSelect
+        bind:value={containerProviderConnection}
+        containerProviderConnections={$providerConnectionsInfo} />
+    </div>
+    <Button inProgress={loading} disabled={loading || !containerProviderConnection} icon={faTruckPickup} on:click={loadIntoMachine}>
+      Load into machine
+    </Button>
   </svelte:fragment>
   <svelte:fragment slot="tabs">
     {#each models as model (model.id)}

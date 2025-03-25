@@ -64,6 +64,7 @@ const row = new TableRow<QuadletInfo>({
         accumulator.push({
           ...quadlet,
           parent: service.id,
+          selected: false,
         });
       }
 
