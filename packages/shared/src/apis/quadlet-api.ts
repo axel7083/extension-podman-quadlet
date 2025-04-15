@@ -4,6 +4,7 @@
 import type { QuadletInfo } from '../models/quadlet-info';
 import type { ProviderContainerConnectionIdentifierInfo } from '../models/provider-container-connection-identifier-info';
 import type { SynchronisationInfo } from '../models/synchronisation';
+import type { Template } from '../models/template';
 
 export abstract class QuadletApi {
   static readonly CHANNEL: string = 'quadlet-api';
@@ -54,4 +55,9 @@ export abstract class QuadletApi {
   abstract getSynchronisationInfo(): Promise<SynchronisationInfo[]>;
 
   abstract getKubeYAML(connection: ProviderContainerConnectionIdentifierInfo, id: string): Promise<string>;
+
+  /**
+   * List Quadlets templates
+   */
+  abstract templates(): Promise<Array<Template>>;
 }
