@@ -10,7 +10,7 @@ import { QuadletDryRunParser } from '../utils/parsers/quadlet-dryrun-parser';
 import type { Quadlet } from '../models/quadlet';
 import type { QuadletInfo } from '/@shared/src/models/quadlet-info';
 import type { AsyncInit } from '../utils/async-init';
-import { join as joinposix, basename, dirname, isAbsolute } from 'node:path/posix';
+import { join as joinposix, basename, dirname, isAbsolute, normalize } from 'node:path/posix';
 import { load } from 'js-yaml';
 import { QuadletTypeParser } from '../utils/parsers/quadlet-type-parser';
 import type { SynchronisationInfo } from '/@shared/src/models/synchronisation';
@@ -268,6 +268,7 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
 
   /**
    * This method differ from {@link saveIntoMachine} it aims to update a single Quadlet file.
+   * @deprecated
    * @param options the options.quadlet cannot contain mutliple resources.
    */
   async updateIntoMachine(options: {
@@ -326,6 +327,7 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
   /**
    * This method differ from {@link updateIntoMachine} it aims to create a new Quadlet file
    * @param options The options.quadlet can contain multiple resources.
+   * @deprecated
    */
   async saveIntoMachine(options: {
     quadlet: string;
@@ -393,6 +395,87 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
       })
       .finally(() => {
         this.logUsage(TelemetryEvents.QUADLET_CREATE, telemetry);
+      });
+  }
+
+  /**
+   * @param options
+   */
+  async writeIntoMachine(options: {
+    provider: ProviderContainerConnection;
+    /**
+     * @default false (Run as systemd user)
+     */
+    admin?: boolean;
+    files: Array<{ filename: string, content: string }>;
+  }): Promise<void> {
+    const telemetry: Record<string, unknown> = {
+      admin: options.admin,
+    };
+
+    // note the number of files we update
+    telemetry['files-length'] = options.files.length;
+
+    // create a progress task
+    return this.dependencies.window
+      .withProgress(
+        {
+          title: `Saving`,
+          location: ProgressLocation.TASK_WIDGET,
+        }, async () => {
+          // 1. checks valid filenames
+
+          // ensure we don't have file with the same name
+          const filenames = new Set(options.files.map(({ filename }) => filename));
+          if(filenames.size !== options.files.length) throw new Error('each file should have a unique name.');
+
+          // ensure we don't try to write empty filename
+          if(options.files.some(({ filename}) => filename.length === 0)) {
+            throw new Error('cannot write file with empty name.');
+          }
+
+          // ensure all filename have a valid extension (E.g. .container, .yaml etc.)
+          if(options.files.some(({ filename }) => !filename.includes('.'))) {
+            throw new Error('all files must have a valid extension.');
+          }
+
+          // 2. write all files - do not try to run them in parallel
+          for (const { filename, content } of options.files) {
+            // Prevent path escape
+            const normalized = normalize(filename);
+            if(dirname(normalized) !== '.') throw new Error('invalid filename: cannot contain parent directory in path');
+
+            let destination: string;
+            if (options.admin) {
+              destination = joinposix('/etc/containers/systemd', filename);
+            } else {
+              destination = joinposix('~/.config/containers/systemd', filename);
+            }
+
+            // write the file
+            try {
+              await this.dependencies.podman.writeTextFile(options.provider, destination, content);
+            } catch (err: unknown) {
+              console.error(`Something went wrong while trying to write file to ${destination}`, err);
+              throw err;
+            }
+          }
+
+          // 3. reload
+          await this.dependencies.systemd.daemonReload({
+            admin: options.admin ?? false,
+            provider: options.provider,
+          });
+
+          //4. collect quadlets
+          await this.collectPodmanQuadlet();
+        })
+      .catch((err: unknown) => {
+        telemetry['error'] = err;
+        throw err;
+      })
+      .finally(() => {
+        this.logUsage(TelemetryEvents.QUADLET_WRITE, telemetry);
       });
   }
 

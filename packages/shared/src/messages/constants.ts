@@ -9,4 +9,5 @@ export const noTimeoutChannels: string[] = [
   getChannel(DialogApi, 'showInformationMessage'),
   getChannel(QuadletApi, 'start'),
   getChannel(QuadletApi, 'updateIntoMachine'),
+  getChannel(QuadletApi, 'writeIntoMachine'),
 ];
