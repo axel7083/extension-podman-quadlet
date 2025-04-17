@@ -163,6 +163,10 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
         continue;
       }
 
+      // check if machine is rootful
+      const admin = provider.connection.vmType ? await this.podman.isMachineRootful(provider) : false;
+      console.log(`[QuadletService] rootful machine: ${admin}`);
+
       // only care about started connection
       const status = provider.connection.status();
       if (status !== 'started') {
@@ -183,7 +187,7 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
       );
 
       // 3. get the quadlets
-      const quadlets = await this.getPodmanQuadlets({ provider, admin: false });
+      const quadlets = await this.getPodmanQuadlets({ provider, admin });
 
       // 4. update internally but do not notify (we need to collect the statuses)
       this.update(provider, quadlets, false);
@@ -216,10 +220,12 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
       const providerIdentifier = this.fromSymbol(symbol);
       const provider = this.providers.getProviderContainerConnection(providerIdentifier);
 
+      const admin = provider.connection.vmType ? await this.podman.isMachineRootful(provider) : false;
+
       // get the statuses of the quadlets with a corresponding service
       const statuses = await this.dependencies.systemd.getActiveStatus({
         provider: provider,
-        admin: false,
+        admin,
         services: quadlets
           .filter((quadlet): quadlet is Quadlet & { service: string } => !!quadlet.service)
           .map(quadlet => quadlet.service),
@@ -296,7 +302,9 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
           // 1. save the quadlet
           try {
             console.debug(`[QuadletService] updating quadlet file to ${options.path}`);
-            await this.dependencies.podman.writeTextFile(options.provider, options.path, options.quadlet);
+            await this.dependencies.podman.writeTextFile(options.provider, options.path, options.quadlet, {
+              admin: options.admin,
+            });
           } catch (err: unknown) {
             console.error(`Something went wrong while trying to write file to ${options.path}`, err);
             throw err;
@@ -368,7 +376,9 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
             // 2. write the file
             try {
               console.debug(`[QuadletService] writing quadlet file to ${destination}`);
-              await this.dependencies.podman.writeTextFile(options.provider, destination, resource.content);
+              await this.dependencies.podman.writeTextFile(options.provider, destination, resource.content, {
+                admin: options.admin,
+              });
             } catch (err: unknown) {
               console.error(`Something went wrong while trying to write file to ${destination}`, err);
               throw err;
@@ -441,7 +451,7 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
 
             // 1. remove the quadlet file
             console.debug(`[QuadletService] Deleting quadlet ${quadlet.id} with path ${quadlet.path}`);
-            await this.dependencies.podman.rmFile(options.provider, quadlet.path);
+            await this.dependencies.podman.rmFile(options.provider, quadlet.path, { admin: options.admin });
 
             // 2. remove the deleted quadlet from the entries
             this.removeEntry({

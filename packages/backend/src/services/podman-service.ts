@@ -60,8 +60,14 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
    * @param connection
    * @param destination
    * @param content
+   * @param options
    */
-  async writeTextFile(connection: ProviderContainerConnection, destination: string, content: string): Promise<void> {
+  async writeTextFile(
+    connection: ProviderContainerConnection,
+    destination: string,
+    content: string,
+    options?: { admin?: boolean },
+  ): Promise<void> {
     // linux native special case
     if (this.isLinux && connection.connection.vmType === undefined) {
       console.debug('[PodmanService] native connection using node:fs');
@@ -79,6 +85,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
       connection: connection,
       args: ['-p', dirname(destination)],
       command: `mkdir`,
+      admin: options?.admin,
     });
 
     // write
@@ -86,6 +93,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
       connection: connection,
       args: [`"${content}"`, '>', destination],
       command: `echo`,
+      admin: options?.admin,
     });
   }
 
@@ -94,8 +102,9 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
    * @dangerous
    * @param connection
    * @param path
+   * @param options
    */
-  async rmFile(connection: ProviderContainerConnection, path: string): Promise<void> {
+  async rmFile(connection: ProviderContainerConnection, path: string, options?: { admin?: boolean }): Promise<void> {
     // linux native special case
     if (this.isLinux && connection.connection.vmType === undefined) {
       console.debug('[PodmanService] native connection using node:fs');
@@ -106,6 +115,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
       connection: connection,
       args: [path],
       command: `rm`,
+      admin: options?.admin,
     });
   }
 
@@ -121,6 +131,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
     logger?: Logger;
     env?: Record<string, string>;
     token: CancellationToken;
+    admin?: boolean;
   }): Promise<RunResult> {
     const { connection, command, args = [] } = options;
 
@@ -131,6 +142,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
         logger: options.logger,
         env: options.env,
         token: options.token,
+        isAdmin: options.admin,
       });
     }
 
@@ -141,7 +153,13 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
       );
     }
 
-    const sshCommand = ['machine', 'ssh', options.connection.connection.name, `${command} ${args.join(' ')}`];
+    let fullCommand = `${command} ${args.join(' ')}`;
+    // wrap the command inside a sudo bash -c
+    if (options.admin) {
+      fullCommand = `sudo bash -c '${fullCommand}'`;
+    }
+
+    const sshCommand = ['machine', 'ssh', options.connection.connection.name, fullCommand];
     console.debug('[PodmanService] ssh command', sshCommand);
 
     return this.podman.exec(sshCommand, {
@@ -167,6 +185,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
     logger?: Logger;
     env?: Record<string, string>;
     token?: CancellationToken;
+    admin?: boolean;
   }): Promise<RunResult> {
     // we should always have a default timeout if no CancellationToken is provided
     let token: CancellationToken;
@@ -238,6 +257,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
     logger?: Logger;
     token?: CancellationToken;
     env?: Record<string, string>;
+    admin?: boolean;
   }): Promise<RunResult | RunError> {
     return this.executeWrapper({
       ...options,
@@ -258,6 +278,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
     logger?: Logger;
     token?: CancellationToken;
     env?: Record<string, string>;
+    admin?: boolean;
   }): Promise<RunResult> {
     return this.executeWrapper({
       ...options,

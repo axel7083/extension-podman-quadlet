@@ -116,6 +116,7 @@ export class SystemdService extends SystemdHelper implements Disposable, AsyncIn
     const result = await this.podman.systemctlExec({
       connection: options.provider,
       args,
+      admin: options.admin,
     });
     return result.stderr.length === 0;
   }
@@ -142,6 +143,7 @@ export class SystemdService extends SystemdHelper implements Disposable, AsyncIn
       const result = await this.podman.systemctlExec({
         connection: options.provider,
         args,
+        admin: options.admin,
       });
       return result.stderr.length === 0;
     } catch (err: unknown) {
@@ -174,6 +176,7 @@ export class SystemdService extends SystemdHelper implements Disposable, AsyncIn
       const result = await this.podman.systemctlExec({
         connection: options.provider,
         args,
+        admin: options.admin,
       });
       return result.stderr.length === 0;
     } catch (err: unknown) {

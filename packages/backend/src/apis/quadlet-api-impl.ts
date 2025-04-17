@@ -39,13 +39,19 @@ export class QuadletApiImpl extends QuadletApi {
     if (!quadlet.service)
       throw new Error(`cannot start quadlet: quadlet with id ${id} does not have an associated systemd service`);
 
+    // get corresponding connection
     const providerConnection = this.dependencies.providers.getProviderContainerConnection(connection);
+
+    // check if machine is rootful to run as user or admin
+    const admin = providerConnection.connection.vmType
+      ? await this.dependencies.podman.isMachineRootful(providerConnection)
+      : false;
 
     try {
       return await this.dependencies.systemd.start({
         service: quadlet.service,
         provider: providerConnection,
-        admin: false,
+        admin,
       });
     } finally {
       this.dependencies.quadlet.refreshQuadletsStatuses().catch(console.error);
@@ -58,13 +64,19 @@ export class QuadletApiImpl extends QuadletApi {
     if (!quadlet.service)
       throw new Error(`cannot stop quadlet: quadlet with id ${id} does not have an associated systemd service`);
 
+    // get corresponding connection
     const providerConnection = this.dependencies.providers.getProviderContainerConnection(connection);
+
+    // check if machine is rootful to run as user or admin
+    const admin = providerConnection.connection.vmType
+      ? await this.dependencies.podman.isMachineRootful(providerConnection)
+      : false;
 
     try {
       return await this.dependencies.systemd.stop({
         service: quadlet.service,
         provider: providerConnection,
-        admin: false,
+        admin,
       });
     } finally {
       this.dependencies.quadlet.refreshQuadletsStatuses().catch(console.error);
@@ -72,13 +84,19 @@ export class QuadletApiImpl extends QuadletApi {
   }
 
   override async remove(connection: ProviderContainerConnectionIdentifierInfo, ...ids: string[]): Promise<void> {
+    // get corresponding connection
     const providerConnection = this.dependencies.providers.getProviderContainerConnection(connection);
+
+    // check if machine is rootful to run as user or admin
+    const admin = providerConnection.connection.vmType
+      ? await this.dependencies.podman.isMachineRootful(providerConnection)
+      : false;
 
     try {
       return await this.dependencies.quadlet.remove({
         provider: providerConnection,
         ids: ids,
-        admin: false,
+        admin,
       });
     } finally {
       this.dependencies.quadlet.refreshQuadletsStatuses().catch(console.error);
@@ -86,12 +104,18 @@ export class QuadletApiImpl extends QuadletApi {
   }
 
   override async read(connection: ProviderContainerConnectionIdentifierInfo, id: string): Promise<string> {
+    // get corresponding connection
     const providerConnection = this.dependencies.providers.getProviderContainerConnection(connection);
+
+    // check if machine is rootful to run as user or admin
+    const admin = providerConnection.connection.vmType
+      ? await this.dependencies.podman.isMachineRootful(providerConnection)
+      : false;
 
     return await this.dependencies.quadlet.read({
       provider: providerConnection,
       id: id,
-      admin: false,
+      admin,
     });
   }
 
@@ -106,15 +130,26 @@ export class QuadletApiImpl extends QuadletApi {
         `cannot create quadlet logger quadlet: quadlet with id ${options.quadletId} does not have an associated systemd service`,
       );
 
+    // get corresponding connection
     const providerConnection = this.dependencies.providers.getProviderContainerConnection(options.connection);
 
+    // check if machine is rootful to run as user or admin
+    const admin = providerConnection.connection.vmType
+      ? await this.dependencies.podman.isMachineRootful(providerConnection)
+      : false;
+
     const logger = this.dependencies.loggerService.createLogger();
+
+    const args = ['--follow', `--unit=${quadlet.service}`, '--output=cat'];
+    if (!admin) {
+      args.push('--user');
+    }
 
     // do not wait for the returned value as we --follow
     this.dependencies.podman
       .journalctlExec({
         connection: providerConnection,
-        args: ['--user', '--follow', `--unit=${quadlet.service}`, '--output=cat'],
+        args: args,
         env: {
           SYSTEMD_COLORS: 'true',
           DBUS_SESSION_BUS_ADDRESS: 'unix:path=/run/user/1000/bus',
@@ -133,28 +168,42 @@ export class QuadletApiImpl extends QuadletApi {
     return this.dependencies.loggerService.disposeLogger(loggerId);
   }
 
-  override saveIntoMachine(options: {
+  override async saveIntoMachine(options: {
     connection: ProviderContainerConnectionIdentifierInfo;
     quadlet: string;
     name: string;
   }): Promise<void> {
+    // get corresponding connection
     const providerConnection = this.dependencies.providers.getProviderContainerConnection(options.connection);
+
+    // check if machine is rootful to run as user or admin
+    const admin = providerConnection.connection.vmType
+      ? await this.dependencies.podman.isMachineRootful(providerConnection)
+      : false;
 
     return this.dependencies.quadlet.saveIntoMachine({
       ...options,
       provider: providerConnection,
+      admin,
     });
   }
 
-  override updateIntoMachine(options: {
+  override async updateIntoMachine(options: {
     connection: ProviderContainerConnectionIdentifierInfo;
     quadlet: string; // content
     path: string;
   }): Promise<void> {
+    // get corresponding connection
     const providerConnection = this.dependencies.providers.getProviderContainerConnection(options.connection);
+
+    // check if machine is rootful to run as user or admin
+    const admin = providerConnection.connection.vmType
+      ? await this.dependencies.podman.isMachineRootful(providerConnection)
+      : false;
 
     return this.dependencies.quadlet.updateIntoMachine({
       ...options,
+      admin,
       provider: providerConnection,
     });
   }
