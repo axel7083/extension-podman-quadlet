@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2024 Red Hat, Inc.
+ * Copyright (C) 2025 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export enum Messages {
-  TEST_PURPOSE = 'test-purpose',
-  UPDATE_QUADLETS = 'update-quadlets',
-  UPDATE_PROVIDERS = 'update-providers',
-  UPDATE_PODMAN_REMOTES = 'update-podman-remotes',
-  ROUTE_UPDATE = 'route-update',
-  LOGGER_DATA = 'logger-data',
+export interface RemoteConnection {
+  Name: string;
+  IsMachine?: boolean;
+  URI: string;
+  Identity?: string;
+  Default: boolean;
+  ReadWrite: boolean;
 }

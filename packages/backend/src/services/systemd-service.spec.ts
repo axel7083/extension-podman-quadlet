@@ -1,7 +1,7 @@
 /**
  * @author axel7083
  */
-import type { PodmanService } from './podman-service';
+import type { PodmanService } from './podman/podman-service';
 import { expect, test, vi, beforeEach } from 'vitest';
 import { SystemdService } from './systemd-service';
 import type { ProviderContainerConnection, TelemetryLogger } from '@podman-desktop/api';

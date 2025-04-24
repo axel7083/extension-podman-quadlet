@@ -15,7 +15,7 @@ export class SystemdService extends SystemdHelper implements Disposable, AsyncIn
   async init(): Promise<void> {}
 
   async getSystemctlVersion(provider: ProviderContainerConnection): Promise<string> {
-    const result = await this.podman.systemctlExec({
+    const result = await this.dependencies.podmanExec.systemctlExec({
       connection: provider,
       args: ['--version'],
     });
@@ -40,11 +40,10 @@ export class SystemdService extends SystemdHelper implements Disposable, AsyncIn
     }
     args.push(...['list-unit-files', '--state=generated', '--output=json']);
 
-    const result = await this.podman.systemctlExec({
+    const result = await this.dependencies.podmanExec.systemctlExec({
       connection: options.provider,
-      args: args,
+      args,
     });
-
     /**
      * Here is an example of the output of the command
      * [
@@ -81,11 +80,11 @@ export class SystemdService extends SystemdHelper implements Disposable, AsyncIn
     args.push(...options.services);
 
     console.log(`[SystemdService] running ${args}`);
-    const result = await this.podman.systemctlExec({
+    const result = await this.dependencies.podmanExec.systemctlExec({
       connection: options.provider,
       args,
     });
-    const lines: string[] = result.stdout.split('\n');
+    const lines: string[] = result.stdout.trim().split('\n');
 
     if (lines.length !== options.services.length)
       throw new Error(
@@ -113,7 +112,7 @@ export class SystemdService extends SystemdHelper implements Disposable, AsyncIn
       args.push('--user');
     }
     args.push('daemon-reload');
-    const result = await this.podman.systemctlExec({
+    const result = await this.dependencies.podmanExec.systemctlExec({
       connection: options.provider,
       args,
     });
@@ -139,7 +138,7 @@ export class SystemdService extends SystemdHelper implements Disposable, AsyncIn
       }
       args.push(...['start', options.service]);
 
-      const result = await this.podman.systemctlExec({
+      const result = await this.dependencies.podmanExec.systemctlExec({
         connection: options.provider,
         args,
       });
@@ -170,8 +169,7 @@ export class SystemdService extends SystemdHelper implements Disposable, AsyncIn
         args.push('--user');
       }
       args.push(...['stop', options.service]);
-
-      const result = await this.podman.systemctlExec({
+      const result = await this.dependencies.podmanExec.systemctlExec({
         connection: options.provider,
         args,
       });

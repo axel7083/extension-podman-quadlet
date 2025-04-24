@@ -16,7 +16,7 @@ import type {
 } from '@podman-desktop/api';
 import { WebviewService } from './webview-service';
 import { RpcExtension } from '/@shared/src/messages/message-proxy';
-import { PodmanService } from './podman-service';
+import { PodmanService } from './podman/podman-service';
 import { SystemdService } from './systemd-service';
 import { QuadletService } from './quadlet-service';
 import { QuadletApiImpl } from '../apis/quadlet-api-impl';
@@ -44,6 +44,9 @@ import { DialogService } from './dialog-service';
 import { DialogApiImpl } from '../apis/dialog-api-impl';
 import { DialogApi } from '/@shared/src/apis/dialog-api';
 import { PodletJsService } from './podlet-js-service';
+import { PodmanRemote } from './podman/podman-remote';
+import { PodmanFS } from './podman/podman-fs';
+import { PodmanExec } from './podman/podman-exec';
 
 interface Dependencies {
   extensionContext: ExtensionContext;
@@ -131,10 +134,31 @@ export class MainService implements Disposable, AsyncInit {
     await podman.init();
     this.#disposables.push(podman);
 
+    // The Podman Remote service is responsible for tracking remote
+    const podmanRemote = new PodmanRemote({
+      podman: podman,
+      webview: webview.getPanel().webview,
+      providers: providers,
+    });
+    await podmanRemote.init();
+    this.#disposables.push(podmanRemote);
+
+    const podmanFS = new PodmanFS({
+      remote: podmanRemote,
+    });
+    this.#disposables.push(podmanFS);
+
+    // PodmanExec is a class managing allowing to execute on the remote machine
+    const podmanExec = new PodmanExec({
+      remote: podmanRemote,
+    });
+    this.#disposables.push(podmanExec);
+
     // systemd service is responsible for communicating with the systemd in the podman machine
     const systemd = new SystemdService({
       podman,
       telemetry: this.#telemetry,
+      podmanExec,
     });
     await systemd.init();
     this.#disposables.push(systemd);
@@ -148,6 +172,9 @@ export class MainService implements Disposable, AsyncInit {
       providers: providers,
       window: this.dependencies.window,
       telemetry: this.#telemetry,
+      podmanFS: podmanFS,
+      remote: podmanRemote,
+      podmanExec,
     });
     await quadletService.init();
     this.#disposables.push(quadletService);

@@ -118,8 +118,7 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
    * @param provider
    */
   protected async getQuadletVersion(provider: ProviderContainerConnection): Promise<string> {
-    const result = await this.podman.quadletExec({
-      connection: provider,
+    const result = await this.dependencies.podmanExec.exec(provider, '/usr/libexec/podman/quadlet', {
       args: ['-version'],
     });
     if (isRunError(result)) throw new Error(`cannot get quadlet version (${result.exitCode}): ${result.stderr}`);
@@ -137,8 +136,8 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
     if (!options.admin) {
       args.push('-user');
     }
-    const result = await this.podman.quadletExec({
-      connection: options.provider,
+
+    const result = await this.dependencies.podmanExec.exec(options.provider, '/usr/libexec/podman/quadlet', {
       args,
     });
 
@@ -282,7 +281,14 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
 
             // write the file
             try {
-              await this.dependencies.podman.writeTextFile(options.provider, destination, content);
+              if(this.dependencies.remote.isRemote(options.provider)) {
+                console.log(`[QuadletService] write file to REMOTE podman`);
+                await this.dependencies.podmanFS.write(options.provider, destination, content);
+              } else {
+                console.log(`[QuadletService] write file to NATIVE podman`);
+                await this.dependencies.podman.writeTextFile(options.provider, destination, content);
+              }
+
             } catch (err: unknown) {
               console.error(`Something went wrong while trying to write file to ${destination}`, err);
               throw err;
@@ -355,7 +361,7 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
 
             // 1. remove the quadlet file
             console.debug(`[QuadletService] Deleting quadlet ${quadlet.id} with path ${quadlet.path}`);
-            await this.dependencies.podman.rmFile(options.provider, quadlet.path);
+            await this.dependencies.podmanFS.rm(options.provider, quadlet.path);
 
             // 2. remove the deleted quadlet from the entries
             this.removeEntry({
@@ -410,7 +416,7 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
     });
     if (!quadlet) throw new Error(`quadlet with id ${options.id} not found`);
 
-    return await this.dependencies.podman.readTextFile(options.provider, quadlet.path);
+    return await this.dependencies.podmanFS.read(options.provider, quadlet.path);
   }
 
   getSynchronisationInfo(): SynchronisationInfo[] {
@@ -453,7 +459,7 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
 
     try {
       // read
-      const result = await this.dependencies.podman.readTextFile(options.provider, target);
+      const result = await this.dependencies.podmanFS.read(options.provider, target);
       return result;
     } catch (err: unknown) {
       console.error(`Something went wrong with readTextFile on ${target}`, err);

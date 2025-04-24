@@ -12,11 +12,11 @@ import type {
 import { CancellationTokenSource } from '@podman-desktop/api';
 import type { PodmanDependencies } from './podman-helper';
 import { PodmanHelper } from './podman-helper';
-import type { AsyncInit } from '../utils/async-init';
+import type { AsyncInit } from '../../utils/async-init';
 import { dirname } from 'node:path/posix';
 import { writeFile, mkdir, readFile, rm } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { isRunError } from '../utils/run-error';
+import { isRunError } from '../../utils/run-error';
 
 export class PodmanService extends PodmanHelper implements Disposable, AsyncInit {
   #extensionsEventDisposable: Disposable | undefined;
@@ -39,6 +39,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
    * Feel very hacky
    * @param connection
    * @param path
+   * @deprecated use {@link PodmanFSTP}
    */
   async readTextFile(connection: ProviderContainerConnection, path: string): Promise<string> {
     // linux native special case
@@ -60,6 +61,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
    * @param connection
    * @param destination
    * @param content
+   * @deprecated use {@link PodmanFSTP}
    */
   async writeTextFile(connection: ProviderContainerConnection, destination: string, content: string): Promise<void> {
     // linux native special case
@@ -94,6 +96,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
    * @dangerous
    * @param connection
    * @param path
+   * @deprecated use {@link PodmanFSTP}
    */
   async rmFile(connection: ProviderContainerConnection, path: string): Promise<void> {
     // linux native special case
@@ -158,7 +161,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
    * @remarks if no CancellationToken is provided one will be created with a default timeout
    * @remarks use internal {@link execute}
    * @dangerous
-   * @protected
+   * @deprecated use {@link PodmanFSTP}
    */
   protected async executeWrapper(options: {
     connection: ProviderContainerConnection;
@@ -197,6 +200,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
   /**
    * @privateRemarks We do not expose {@link executeWrapper} for security purpose, so we must expose the quadlet exec
    * @param options
+   * @deprecated use {@link PodmanExec} instead
    */
   quadletExec(options: {
     connection: ProviderContainerConnection;
@@ -231,6 +235,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
    *
    * @dangerous
    * @param options
+   * @deprecated use {@link PodmanExec} instead
    */
   async systemctlExec(options: {
     connection: ProviderContainerConnection;
@@ -251,6 +256,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
 
   /**
    * @param options
+   * @deprecated use {@link PodmanExec} instead
    */
   async journalctlExec(options: {
     connection: ProviderContainerConnection;

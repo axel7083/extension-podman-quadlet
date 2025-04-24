@@ -5,10 +5,13 @@ import type { env, TelemetryLogger, Webview, window } from '@podman-desktop/api'
 import { Publisher } from '../utils/publisher';
 import type { QuadletInfo } from '/@shared/src/models/quadlet-info';
 import { Messages } from '/@shared/src/messages';
-import type { PodmanService } from './podman-service';
+import type { PodmanService } from './podman/podman-service';
 import type { SystemdService } from './systemd-service';
 import type { ProviderService } from './provider-service';
 import type { ProviderContainerConnectionIdentifierInfo } from '/@shared/src/models/provider-container-connection-identifier-info';
+import { PodmanRemote } from './podman/podman-remote';
+import { PodmanFS } from './podman/podman-fs';
+import { PodmanExec } from './podman/podman-exec';
 
 export interface QuadletServiceDependencies {
   providers: ProviderService;
@@ -18,6 +21,9 @@ export interface QuadletServiceDependencies {
   systemd: SystemdService;
   window: typeof window;
   telemetry: TelemetryLogger;
+  remote: PodmanRemote;
+  podmanFS: PodmanFS;
+  podmanExec: PodmanExec;
 }
 
 type ProviderIdentifier = `${string}:${string}`;

@@ -30,7 +30,7 @@ import type {
 } from '@podman-desktop/api';
 import { ProgressLocation } from '@podman-desktop/api';
 import type { ProviderService } from './provider-service';
-import type { PodmanService } from './podman-service';
+import type { PodmanService } from './podman/podman-service';
 import type { SystemdService } from './systemd-service';
 import { QuadletService } from './quadlet-service';
 import { QuadletDryRunParser } from '../utils/parsers/quadlet-dryrun-parser';

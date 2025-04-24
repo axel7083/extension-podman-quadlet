@@ -99,6 +99,7 @@ async function saveIntoMachine(): Promise<void> {
     });
     loaded = true;
   } catch (err: unknown) {
+    console.error(err);
     onError(`Something went wrong while adding quadlet to machine: ${String(err)}`);
   } finally {
     loading = false;

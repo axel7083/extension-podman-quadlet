@@ -19,7 +19,7 @@ import { expect, test, vi, beforeEach, describe } from 'vitest';
 import { QuadletApiImpl } from './quadlet-api-impl';
 import type { QuadletService } from '../services/quadlet-service';
 import type { SystemdService } from '../services/systemd-service';
-import type { PodmanService } from '../services/podman-service';
+import type { PodmanService } from '../services/podman/podman-service';
 import type { ProviderService } from '../services/provider-service';
 import type { LoggerService } from '../services/logger-service';
 import type { ProviderContainerConnection, RunResult } from '@podman-desktop/api';

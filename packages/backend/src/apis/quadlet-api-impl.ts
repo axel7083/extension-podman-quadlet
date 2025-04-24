@@ -7,7 +7,7 @@ import type { QuadletInfo } from '/@shared/src/models/quadlet-info';
 import type { QuadletService } from '../services/quadlet-service';
 import type { ProviderContainerConnectionIdentifierInfo } from '/@shared/src/models/provider-container-connection-identifier-info';
 import type { SystemdService } from '../services/systemd-service';
-import type { PodmanService } from '../services/podman-service';
+import type { PodmanService } from '../services/podman/podman-service';
 import type { ProviderService } from '../services/provider-service';
 import type { LoggerService } from '../services/logger-service';
 import type { SynchronisationInfo } from '/@shared/src/models/synchronisation';

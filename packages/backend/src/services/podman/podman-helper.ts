@@ -3,8 +3,9 @@
  */
 import type { env, extensions as Extensions, process as ProcessApi, process as ProcessCore } from '@podman-desktop/api';
 import type { PodmanExtensionApi } from '@podman-desktop/podman-extension-api';
-import { PODMAN_EXTENSION_ID } from '../utils/constants';
-import type { ProviderService } from './provider-service';
+import { PODMAN_EXTENSION_ID } from '../../utils/constants';
+import type { ProviderService } from '../provider-service';
+import type { RemoteConnection } from '../../models/remote-connection';
 
 export interface PodmanDependencies {
   extensions: typeof Extensions;
@@ -58,5 +59,21 @@ export abstract class PodmanHelper {
     }
 
     return podman.exports;
+  }
+
+  /**
+   * Get podman remote connections
+   * @remarks only ssh protocol is supported
+   */
+  public async getRemoteConnections(): Promise<Array<RemoteConnection>> {
+    const { stdout } = await this.podman.exec(['system', 'connection','ls', '--format=json']);
+    const connections: Array<RemoteConnection> = JSON.parse(stdout);
+    // validate output
+    if(!Array.isArray(connections)) throw new Error('malformed output for podman system connection ls command.');
+
+    // filter out all machines (that are local)
+    return connections
+      .filter(connection => connection.IsMachine !== true)
+      .filter(connection => connection.URI.startsWith('ssh:'));
   }
 }

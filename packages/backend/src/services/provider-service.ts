@@ -30,7 +30,8 @@ export class ProviderService
   getContainerConnections(): ProviderContainerConnection[] {
     return this.dependencies.providers
       .getContainerConnections()
-      .filter(({ connection }) => connection.type === 'podman');
+      .filter(({ connection }) => connection.type === 'podman')
+      .filter(({ connection }) => connection.name.toLowerCase() !== 'podman'); // TODO: exclude podman native for now
   }
 
   public all(): ProviderContainerConnectionDetailedInfo[] {
