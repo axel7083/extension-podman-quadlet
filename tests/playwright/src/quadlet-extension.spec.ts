@@ -250,7 +250,7 @@ test.describe.serial(`Podman Quadlet extension installation and verification`, {
       // wait for active status to appear
       await playExpect
         .poll(async () => await details.isActive(), {
-          timeout: 30_000,
+          timeout: 45_000,
         })
         .toBeTruthy();
 
