@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ macos-15 ]
+        os: [ macos-13 ]
     env:
       SKIP_INSTALLATION: true
       EXTENSION_PREINSTALLED: true
