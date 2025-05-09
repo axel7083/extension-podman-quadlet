@@ -93,6 +93,14 @@ jobs:
       deployments: write
     steps:
       - uses: actions/checkout@v4
+
+      - uses: chrnorm/deployment-action@v2
+        name: Create GitHub deployment
+        id: deployment
+        with:
+          token: '${{ github.token }}'
+          environment: staging
+
       - name: Build Image and Extract Files
         id: build-image
         run: |
@@ -110,13 +118,22 @@ jobs:
           name: quadlet-plugin
           path: output/plugins/
 
-      - uses: chrnorm/deployment-action@v2
-        name: Create GitHub deployment
-        id: deployment
+      - name: Update deployment status (success)
+        if: success()
+        uses: chrnorm/deployment-status@v2
         with:
           token: '${{ github.token }}'
           environment-url: ${{ steps.upload-image.outputs.artifact-url  }}
-          environment: staging
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          state: 'success'
+
+      - name: Update deployment status (failure)
+        if: failure()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: '${{ github.token }}'
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          state: 'failure'
 
   e2e-pr-check:
     name: e2e tests smoke / ${{ matrix.os }}
