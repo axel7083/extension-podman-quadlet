@@ -89,6 +89,8 @@ jobs:
   build-container:
     name: Build Extension Image
     runs-on: ubuntu-24.04
+    permissions:
+      deployments: write
     steps:
       - uses: actions/checkout@v4
       - name: Build Image and Extract Files
@@ -100,11 +102,21 @@ jobs:
           podman export $CONTAINER_ID | tar -x -C output/plugins/
           podman rm -f $CONTAINER_ID
           podman rmi -f localhost/local_image:latest
+
       - name: Upload Quadlet Image Artifact
+        id: upload-image
         uses: actions/upload-artifact@v4
         with:
           name: quadlet-plugin
           path: output/plugins/
+
+      - uses: chrnorm/deployment-action@v2
+        name: Create GitHub deployment
+        id: deployment
+        with:
+          token: '${{ github.token }}'
+          environment-url: ${{ steps.upload-image.outputs.artifact-url  }}
+          environment: staging
 
   e2e-pr-check:
     name: e2e tests smoke / ${{ matrix.os }}
