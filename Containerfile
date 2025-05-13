@@ -20,7 +20,6 @@ COPY --from=builder /app/packages/backend/media/ /extension/media
 COPY --from=builder /app/LICENSE /extension/
 COPY --from=builder /app/packages/backend/icon.png /extension/
 COPY --from=builder /app/README.md /extension/
-COPY --from=builder /app/node_modules/ssh2 /extension/dist/node_modules/ssh2
 
 LABEL org.opencontainers.image.title="Podman Quadlet Extension" \
         org.opencontainers.image.description="Podman Quadlet Extension" \
