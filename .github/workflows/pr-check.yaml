@@ -90,7 +90,7 @@ jobs:
     name: Build Extension Image
     runs-on: ubuntu-24.04
     env:
-      IMAGE_TAG: ghcr.io/${{ github.repository }}/test:pr-${{ github.event.number }}-${{ github.sha }}
+      IMAGE_TAG: ghcr.io/${{ github.repository }}:pr-${{ github.event.number }}-${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
 
