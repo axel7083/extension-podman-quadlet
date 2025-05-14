@@ -1,12 +1,19 @@
 FROM node:22-slim AS builder
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+# Install python for node-gyp
+RUN apt update -y && apt install python3 make gcc g++ -y
+
 RUN npm i -g corepack@0.31.0 && corepack enable
 
 COPY . /app
 WORKDIR /app
 RUN pnpm install --frozen-lockfile
 RUN pnpm build
+
+# adding ssh2 to to dist folder
+RUN echo "node-linker=hoisted" >> /app/packages/backend/dist/.npmrc
+RUN pnpm --dir /app/packages/backend/dist add ssh2@1.16.0
 
 FROM scratch
 
