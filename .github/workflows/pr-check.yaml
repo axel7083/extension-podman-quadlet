@@ -100,7 +100,7 @@ jobs:
       - name: Build Image and Extract Files
         id: build-image
         run: |
-          podman build -t ${{ env.IMAGE_TAG }} ./
+          podman build --squash-all -t ${{ env.IMAGE_TAG }} ./
           CONTAINER_ID=$(podman create ${{ env.IMAGE_TAG }} --entrypoint "")
           mkdir -p output/plugins
           podman export $CONTAINER_ID | tar -x -C output/plugins/
