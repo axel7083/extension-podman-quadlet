@@ -82,7 +82,7 @@ export default defineConfig({
       formats: ['cjs'],
     },
     rollupOptions: {
-      external: ['ssh2-sftp-client', '@podman-desktop/api', ...builtinModules.flatMap(p => [p, `node:${p}`])],
+      external: ['@podman-desktop/api', ...builtinModules.flatMap(p => [p, `node:${p}`])],
       output: {
         entryFileNames: '[name].cjs',
       },
