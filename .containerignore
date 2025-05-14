@@ -1,5 +1,4 @@
 node_modules
-packages/*/node_modules/**
 tests
 examples
 .github
