@@ -1,9 +1,11 @@
-FROM node:22-slim AS builder
+FROM registry.access.redhat.com/ubi9/nodejs-22 AS builder
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-# Install python for node-gyp
-RUN apt update -y && apt install python3 make gcc g++ -y
 
+USER root
+# Install python for node-gyp
+RUN dnf install -y python3 make gcc g++
+# Install Corepack (pnpm)
 RUN npm i -g corepack@0.31.0 && corepack enable
 
 COPY . /app
