@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2024 Red Hat, Inc.
+ * Copyright (C) 2025 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export enum Messages {
-  TEST_PURPOSE = 'test-purpose',
-  UPDATE_QUADLETS = 'update-quadlets',
-  UPDATE_PROVIDERS = 'update-providers',
-  ROUTE_UPDATE = 'route-update',
-  LOGGER_DATA = 'logger-data',
-  UPDATE_TABS = 'update-tabs',
-  UPDATE_LOGGERS = 'update-loggers',
+export interface Body {
+  route: string;
+}
+
+export interface Tab {
+  id: string;
+  title: string;
+  locked: boolean;
+  body: Body;
 }

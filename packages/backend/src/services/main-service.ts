@@ -44,6 +44,7 @@ import { DialogService } from './dialog-service';
 import { DialogApiImpl } from '../apis/dialog-api-impl';
 import { DialogApi } from '/@shared/src/apis/dialog-api';
 import { PodletJsService } from './podlet-js-service';
+import { TabsService } from './tabs-service';
 
 interface Dependencies {
   extensionContext: ExtensionContext;
@@ -177,6 +178,14 @@ export class MainService implements Disposable, AsyncInit {
       telemetry: this.#telemetry,
     });
 
+    // Tabs service
+    const tabs = new TabsService({
+      webview: webview.getPanel().webview,
+      loggers: loggerService,
+    });
+    await tabs.init();
+    this.#disposables.push(tabs);
+
     /**
      * Creating the api for the frontend IPCs
      */
@@ -225,6 +234,7 @@ export class MainService implements Disposable, AsyncInit {
     // routing api
     const routingApiImpl = new RoutingApiImpl({
       routing: routing,
+      tabs: tabs,
     });
     rpcExtension.registerInstance<RoutingApi>(RoutingApi, routingApiImpl);
 

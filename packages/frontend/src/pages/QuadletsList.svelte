@@ -1,8 +1,8 @@
 <script lang="ts">
-import { Button, Table, TableColumn, TableRow, NavPage, TableSimpleColumn } from '@podman-desktop/ui-svelte';
+import { Button, Table, TableColumn, TableRow, TableSimpleColumn, Input } from '@podman-desktop/ui-svelte';
 import type { QuadletInfo } from '/@shared/src/models/quadlet-info';
 import QuadletStatus from '../lib/table/QuadletStatus.svelte';
-import { dialogAPI, quadletAPI } from '../api/client';
+import { dialogAPI, quadletAPI, routingAPI } from '../api/client';
 import QuadletActions from '../lib/table/QuadletActions.svelte';
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons/faArrowsRotate';
 import { quadletsInfo } from '/@store/quadlets';
@@ -14,9 +14,10 @@ import { faCode } from '@fortawesome/free-solid-svg-icons/faCode';
 import MachineBadge from '/@/lib/table/MachineBadge.svelte';
 import type { ProviderContainerConnectionIdentifierInfo } from '/@shared/src/models/provider-container-connection-identifier-info';
 import EmptyQuadletList from '/@/lib/empty-screen/EmptyQuadletList.svelte';
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { get } from 'svelte/store';
 import QuadletName from '/@/lib/table/QuadletName.svelte';
+import Fa from 'svelte-fa';
+import { faSearch } from '@fortawesome/free-solid-svg-icons/faSearch';
 
 const columns = [
   new TableColumn<QuadletInfo>('Status', {
@@ -86,6 +87,14 @@ let data: (QuadletInfo & { selected?: boolean })[] = $derived(
 let empty: boolean = $derived(data.length === 0);
 
 function navigateToGenerate(): void {
+  routingAPI.registerTab({
+    id: 'generate',
+    title: 'Generate',
+    locked: false,
+    body: {
+      route: '/quadlets/generate',
+    },
+  }).catch(console.error);
   router.goto('/quadlets/generate');
 }
 
@@ -124,37 +133,48 @@ async function deleteSelected(): Promise<void> {
 }
 </script>
 
-<NavPage title="Podman Quadlets" searchEnabled={true} bind:searchTerm={searchTerm}>
-  <svelte:fragment slot="additional-actions">
-    <Button icon={faCode} disabled={disabled} title="Generate Quadlet" on:click={navigateToGenerate}
-      >Generate Quadlet</Button>
-    <Button
-      icon={faArrowsRotate}
-      inProgress={loading}
-      disabled={disabled}
-      title="Refresh Quadlets"
-      on:click={refreshQuadlets}>Refresh</Button>
-  </svelte:fragment>
-  <svelte:fragment slot="bottom-additional-actions">
-    <div class="w-full flex justify-between">
-      <div class="flex flex-row items-center space-x-2">
-        {#if selectedItemsNumber > 0}
-          <Button
-            on:click={deleteSelected}
-            title="Delete {selectedItemsNumber} selected items"
-            inProgress={loading}
-            icon={faTrash} />
-          <span>On {selectedItemsNumber} selected items.</span>
-        {/if}
+<div class="flex flex-col h-full w-full">
+  <!-- actions section -->
+  <section aria-label="actions" class="flex items-center border-b border-[var(--pd-content-divider)] p-2">
+    <!-- left -->
+    <div class="flex items-center gap-x-2">
+      <div class="flex items-center border-1 border-solid border-[var(--pd-input-field-stroke)] rounded-[6px]">
+        <Fa class="px-2" size="sm" icon={faSearch} />
+        <Input
+          class="h-[30px]"
+          name="search"
+          placeholder="search"
+          bind:value={searchTerm}
+          --pd-input-field-hover-stroke="transparent"
+          --pd-input-field-stroke="transparent"
+          id="search" />
       </div>
+
       <div class="w-[250px]">
         <ContainerProviderConnectionSelect
           bind:value={containerProviderConnection}
           containerProviderConnections={$providerConnectionsInfo} />
       </div>
     </div>
-  </svelte:fragment>
-  <svelte:fragment slot="content">
+
+    <!-- grow element -->
+    <div class="grow"></div>
+
+    <!-- right -->
+    <div class="flex gap-x-2">
+      <Button icon={faCode} disabled={disabled} title="Generate Quadlet" on:click={navigateToGenerate}
+      >Generate Quadlet</Button>
+      <Button
+        icon={faArrowsRotate}
+        inProgress={loading}
+        disabled={disabled}
+        title="Refresh Quadlets"
+        on:click={refreshQuadlets}>Refresh</Button>
+    </div>
+  </section>
+
+  <!-- page content / body -->
+  <section class="h-full flex w-full my-5 overflow-y-scroll">
     {#if !empty}
       <Table
         kind="quadlets"
@@ -170,5 +190,5 @@ async function deleteSelected(): Promise<void> {
         loading={loading}
         disabled={disabled} />
     {/if}
-  </svelte:fragment>
-</NavPage>
+  </section>
+</div>

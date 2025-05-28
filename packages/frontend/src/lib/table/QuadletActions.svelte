@@ -5,6 +5,7 @@ import { faStop } from '@fortawesome/free-solid-svg-icons/faStop';
 import { faPlay } from '@fortawesome/free-solid-svg-icons/faPlay';
 import { dialogAPI, quadletAPI } from '/@/api/client';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faFileLines } from '@fortawesome/free-solid-svg-icons/faFileLines';
 
 interface Props {
   object: QuadletInfo;
@@ -48,6 +49,13 @@ async function remove(): Promise<void> {
     loading = false;
   }
 }
+
+async function createLogger(): Promise<void> {
+  await quadletAPI.createQuadletLogger({
+    quadletId: object.id,
+    connection: object.connection,
+  });
+}
 </script>
 
 {#if object.state === 'active'}
@@ -55,6 +63,7 @@ async function remove(): Promise<void> {
 {:else}
   <ListItemButtonIcon icon={faPlay} onClick={start} title="Start quadlet" enabled={!loading && !deleting} />
 {/if}
+<ListItemButtonIcon icon={faFileLines} onClick={createLogger} title="Logs" enabled={!loading && !deleting} />
 <ListItemButtonIcon
   icon={faTrash}
   onClick={remove}

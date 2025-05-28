@@ -4,14 +4,12 @@ import { quadletsInfo } from '/@store/quadlets';
 import { DetailsPage, Tab } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 import Route from '/@/lib/Route.svelte';
-import { onMount, onDestroy } from 'svelte';
-import { loggerAPI, quadletAPI, rpcBrowser } from '/@/api/client';
+import { onMount } from 'svelte';
+import { quadletAPI } from '/@/api/client';
 import ProgressBar from '/@/lib/progress/ProgressBar.svelte';
 import MonacoEditor from '/@/lib/monaco-editor/MonacoEditor.svelte';
 import QuadletActions from '/@/lib/table/QuadletActions.svelte';
 import QuadletStatus from '/@/lib/table/QuadletStatus.svelte';
-import { LoggerStore } from '/@store/logger-store';
-import XTerminal from '/@/lib/terminal/XTerminal.svelte';
 import EditorOverlay from '/@/lib/forms/EditorOverlay.svelte';
 import { QuadletType } from '/@shared/src/utils/quadlet-type';
 import KubeYamlEditor from '/@/lib/monaco-editor/KubeYamlEditor.svelte';
@@ -29,8 +27,6 @@ let loading: boolean = $state(true);
 let quadletSource: string | undefined = $state(undefined);
 let originalSource: string | undefined = $state(undefined);
 let changed: boolean = $derived(quadletSource !== originalSource);
-
-let loggerId: string | undefined = $state(undefined);
 
 // found matching quadlets
 let quadlet: QuadletInfo | undefined = $derived(
@@ -66,40 +62,6 @@ onMount(async () => {
     console.error(err);
   } finally {
     loading = false;
-  }
-
-  // create logger
-  createLogger().catch(console.error);
-});
-
-let logger: LoggerStore | undefined = $state();
-
-async function createLogger(): Promise<void> {
-  if (!quadlet) throw new Error('Quadlets not found');
-
-  loggerId = await quadletAPI.createQuadletLogger({
-    quadletId: quadlet.id,
-    connection: {
-      providerId: providerId,
-      name: connection,
-    },
-  });
-
-  // creating logger subscriber
-  logger = new LoggerStore({
-    loggerId: loggerId,
-    rpcBrowser: rpcBrowser,
-    loggerAPI: loggerAPI,
-  });
-  return logger.init();
-}
-
-onDestroy(() => {
-  logger?.dispose();
-  logger = undefined;
-  // dispose logger => will kill the process, we don't want to keep it alive if we leave the page
-  if (loggerId) {
-    quadletAPI.disposeLogger(loggerId).catch(console.error);
   }
 });
 
@@ -162,13 +124,6 @@ function onchange(content: string): void {
           url="/quadlets/{providerId}/{connection}/{id}/yaml"
           selected={$router.path === `/quadlets/${providerId}/${connection}/${id}/yaml`} />
       {/if}
-      {#if logger}
-        <!-- journalctl tab -->
-        <Tab
-          title="Logs"
-          url="/quadlets/{providerId}/{connection}/{id}/logs"
-          selected={$router.path === `/quadlets/${providerId}/${connection}/${id}/logs`} />
-      {/if}
     {/snippet}
     {#snippet iconSnippet()}
       <QuadletStatus object={quadlet} />
@@ -215,21 +170,6 @@ function onchange(content: string): void {
         <Route path="/yaml">
           {#if isKubeQuadlet(quadlet)}
             <KubeYamlEditor quadlet={quadlet} bind:loading={loading} />
-          {/if}
-        </Route>
-
-        <!-- quadlet -dryrun output -->
-        <Route path="/logs">
-          <div class="flex py-2 h-[40px]">
-            <span
-              role="banner"
-              aria-label="journactl command"
-              class="block w-auto text-sm font-medium whitespace-nowrap leading-6 text-[var(--pd-content-text)] pl-2 pr-2">
-              journalctl --user --follow --unit={quadlet.service}
-            </span>
-          </div>
-          {#if logger}
-            <XTerminal store={logger} />
           {/if}
         </Route>
       </div>

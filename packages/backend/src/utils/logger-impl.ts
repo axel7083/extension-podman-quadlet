@@ -1,7 +1,7 @@
 /**
  * @author axel7083
  */
-import type { Disposable, Webview, Logger as ILogger, CancellationToken } from '@podman-desktop/api';
+import type { CancellationToken, Disposable, Logger as ILogger, Webview } from '@podman-desktop/api';
 import { CancellationTokenSource } from '@podman-desktop/api';
 import { Messages } from '/@shared/src/messages';
 

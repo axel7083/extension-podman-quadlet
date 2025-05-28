@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2024 Red Hat, Inc.
+ * Copyright (C) 2025 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import { RPCReadable } from '/@/utils/rpcReadable';
+import { Messages } from '/@shared/src/messages';
+import { routingAPI } from '/@/api/client';
+import type { Tab } from '/@shared/src/models/Tab';
 
-export enum Messages {
-  TEST_PURPOSE = 'test-purpose',
-  UPDATE_QUADLETS = 'update-quadlets',
-  UPDATE_PROVIDERS = 'update-providers',
-  ROUTE_UPDATE = 'route-update',
-  LOGGER_DATA = 'logger-data',
-  UPDATE_TABS = 'update-tabs',
-  UPDATE_LOGGERS = 'update-loggers',
-}
+export const tabs = RPCReadable<Array<Tab>>(
+  [],
+  [Messages.UPDATE_LOGGERS, Messages.UPDATE_TABS],
+  routingAPI.getTabs,
+);
