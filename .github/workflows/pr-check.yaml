@@ -89,22 +89,65 @@ jobs:
   build-container:
     name: Build Extension Image
     runs-on: ubuntu-24.04
+    permissions:
+      deployments: write
+      packages: write
+    env:
+       IMAGE_TAG: ghcr.io/${{ github.repository }}/test:pr-${{ github.event.number }}-${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
+
+      - uses: chrnorm/deployment-action@v2
+        name: Create GitHub deployment
+        id: deployment
+        with:
+          token: '${{ github.token }}'
+          environment: staging
+
+      - name: Login to ghcr.io
+        run: podman login --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }} ghcr.io
+
       - name: Build Image and Extract Files
         id: build-image
         run: |
-          podman build -t local_image ./
-          CONTAINER_ID=$(podman create localhost/local_image --entrypoint "")
+          podman build -t ${{ env.IMAGE_TAG }} ./
+          CONTAINER_ID=$(podman create ${{ env.IMAGE_TAG }} --entrypoint "")
           mkdir -p output/plugins
           podman export $CONTAINER_ID | tar -x -C output/plugins/
           podman rm -f $CONTAINER_ID
-          podman rmi -f localhost/local_image:latest
+
       - name: Upload Quadlet Image Artifact
+        id: upload-image
         uses: actions/upload-artifact@v4
         with:
           name: quadlet-plugin
           path: output/plugins/
+
+      - name: Push Image
+        id: push-image
+        run: |
+          podman push ${{ env.IMAGE_TAG }}
+
+      - name: Cleanup Image Registry
+        run: |
+          podman rmi -f ${{ env.IMAGE_TAG }}
+
+      - name: Update deployment status (success)
+        if: success()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: '${{ github.token }}'
+          environment-url: ${{ env.IMAGE_TAG }}
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          state: 'success'
+
+      - name: Update deployment status (failure)
+        if: failure()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: '${{ github.token }}'
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          state: 'failure'
 
   e2e-pr-check:
     name: e2e tests smoke / ${{ matrix.os }}
