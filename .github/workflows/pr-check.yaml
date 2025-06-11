@@ -109,11 +109,13 @@ jobs:
   e2e-pr-check:
     name: e2e tests smoke / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    needs: build-container
     strategy:
       fail-fast: true
       matrix:
-        os: [ windows-2022, ubuntu-24.04 ]
+        os:
+          - windows-2022
+          - ubuntu-24.04
+          - macos-13 # ONLY INTEL RUNNERS SUPPORT NESTED VIRTUALIZATION
     env:
       SKIP_INSTALLATION: true
       EXTENSION_PREINSTALLED: true
@@ -136,6 +138,15 @@ jobs:
           Start-Process -FilePath .\podman-setup.exe -ArgumentList "/install", "/passive", "/norestart", "/log podman-logs.txt" -Wait
           # Check the logs for debugging purposes
           Get-Content podman-logs.txt
+
+      - name: Install podman
+        if: runner.os == 'macOS'
+        run: |
+          echo Installing Podman
+          brew install podman
+          podman machine init
+          podman machine start
+          podman info
 
       # Init Podman Machine
       - name: Init Podman Machine (Windows)

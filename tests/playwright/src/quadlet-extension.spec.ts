@@ -221,7 +221,7 @@ test.describe.serial(`Podman Quadlet extension installation and verification`, {
       // wait for complete button to appear
       await playExpect
         .poll(async () => await generateForm.gotoPageButton.isEnabled(), {
-          timeout: 15_000,
+          timeout: 40_000,
         })
         .toBeTruthy();
 
@@ -250,7 +250,7 @@ test.describe.serial(`Podman Quadlet extension installation and verification`, {
       // wait for active status to appear
       await playExpect
         .poll(async () => await details.isActive(), {
-          timeout: 15_000,
+          timeout: 45_000,
         })
         .toBeTruthy();
 
@@ -260,7 +260,7 @@ test.describe.serial(`Podman Quadlet extension installation and verification`, {
       // wait for inactive status
       await playExpect
         .poll(async () => !(await details.isActive()), {
-          timeout: 15_000,
+          timeout: 30_000,
         })
         .toBeTruthy();
 
@@ -276,7 +276,7 @@ test.describe.serial(`Podman Quadlet extension installation and verification`, {
       // ensure the page is empty
       await playExpect
         .poll(async () => await quadletListPage.pageIsEmpty(), {
-          timeout: 15_000,
+          timeout: 30_000,
         })
         .toBeTruthy();
     });
