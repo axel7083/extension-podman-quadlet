@@ -146,7 +146,7 @@ export class QuadletApiImpl extends QuadletApi {
 
     const logger = this.dependencies.loggerService.createLogger();
 
-    const args: string[] = ['--user', '--follow', `--unit=${quadlet.service}`, '--output=cat'];
+    const args: string[] = ['--user', '-e', '--follow', `--unit=${quadlet.service}`];
 
     if(options?.options?.currentBoot)
       args.push(
