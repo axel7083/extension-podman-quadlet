@@ -13,7 +13,7 @@ export class LoggerApiImpl extends LoggerApi {
     super();
   }
 
-  override async getLogs(loggerId: string): Promise<string> {
+  override async getLogs(loggerId: string): Promise<Array<string>> {
     return this.dependencies.loggerService.getLogs(loggerId);
   }
 }

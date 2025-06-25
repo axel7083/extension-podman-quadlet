@@ -37,6 +37,11 @@ export abstract class QuadletApi {
   abstract createQuadletLogger(options: {
     connection: ProviderContainerConnectionIdentifierInfo;
     quadletId: string;
+    options?: {
+      since?: string;
+      until?: string;
+      currentBoot?: boolean;
+    }
   }): Promise<string>;
   abstract disposeLogger(loggerId: string): Promise<void>;
   /**

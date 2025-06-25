@@ -1,9 +1,10 @@
 /**
  * @author axel7083
  */
-import type { Disposable, Webview, Logger as ILogger, CancellationToken } from '@podman-desktop/api';
+import type { Webview, CancellationToken } from '@podman-desktop/api';
 import { CancellationTokenSource } from '@podman-desktop/api';
 import { Messages } from '/@shared/src/messages';
+import { BetterLogger } from './better-logger';
 
 interface Dependencies {
   webview: Webview;
@@ -13,13 +14,9 @@ interface Dependencies {
 
 const DEFAULT_MAX_LOGS_LENGTH = 200;
 
-export class LoggerImpl implements Disposable, ILogger {
+export class LoggerImpl extends BetterLogger {
   #logs: string[] = [];
   #tokenSource: CancellationTokenSource | undefined;
-
-  get id(): string {
-    return this.dependencies.loggerId;
-  }
 
   get token(): CancellationToken {
     if (!this.#tokenSource) throw new Error('logger has been disposed');
@@ -27,33 +24,39 @@ export class LoggerImpl implements Disposable, ILogger {
   }
 
   constructor(protected dependencies: Dependencies) {
+    super(dependencies.loggerId);
     this.#tokenSource = new CancellationTokenSource();
   }
 
-  log(...data: unknown[]): void {
+  override log(...data: unknown[]): void {
     return this.onData(data);
   }
-  error(...data: unknown[]): void {
+  override error(...data: unknown[]): void {
     return this.onData(data);
   }
-  warn(...data: unknown[]): void {
+  override warn(...data: unknown[]): void {
     return this.onData(data);
   }
 
   protected onData(...data: unknown[]): void {
-    if (this.#tokenSource?.token.isCancellationRequested) return;
-    data.forEach((data: unknown) => {
-      this.append(String(data));
-    });
+    if (this.#tokenSource?.token?.isCancellationRequested) return;
+
+    // split by line separator
+    data
+      .reduce((accumulator: Array<string>, current) => {
+        accumulator.push(...String(current).trimEnd().split('\n'));
+        return accumulator;
+      }, [] as string[])
+      .forEach((data: string) => {
+        this.append(data);
+      });
   }
 
-  all(): string {
-    return this.#logs.reduce((output, current) => {
-      return output + current;
-    }, '');
+  override all(): Array<string> {
+    return this.#logs;
   }
 
-  dispose(): void {
+  override dispose(): void {
     this.#tokenSource?.cancel();
     this.#tokenSource?.dispose();
     this.#tokenSource = undefined;

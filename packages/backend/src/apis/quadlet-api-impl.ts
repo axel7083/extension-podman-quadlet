@@ -125,6 +125,11 @@ export class QuadletApiImpl extends QuadletApi {
   override async createQuadletLogger(options: {
     connection: ProviderContainerConnectionIdentifierInfo;
     quadletId: string;
+    options?: {
+      since?: string;
+      until?: string;
+      currentBoot?: boolean;
+    }
   }): Promise<string> {
     let quadlet: ServiceQuadlet;
 
@@ -141,13 +146,32 @@ export class QuadletApiImpl extends QuadletApi {
 
     const logger = this.dependencies.loggerService.createLogger();
 
+    const args: string[] = ['--user', '--follow', `--unit=${quadlet.service}`, '--output=cat'];
+
+    if(options?.options?.currentBoot)
+      args.push(
+        '--boot',
+      );
+
+    if(options?.options?.since)
+      args.push(
+        '--since',
+        `"${options.options.since}"`,
+      );
+
+    if(options?.options?.until)
+      args.push(
+        '--until',
+        `"${options.options.until}"`,
+      );
+
     // get the worker
     const worker: PodmanWorker = await this.dependencies.podman.getWorker(providerConnection);
 
     // do not wait for the returned value as we --follow
     worker
       .journalctlExec({
-        args: ['--user', '--follow', `--unit=${quadlet.service}`, '--output=cat'],
+        args: args,
         env: {
           SYSTEMD_COLORS: 'true',
           DBUS_SESSION_BUS_ADDRESS: 'unix:path=/run/user/1000/bus',

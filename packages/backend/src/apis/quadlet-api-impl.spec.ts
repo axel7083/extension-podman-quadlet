@@ -25,7 +25,7 @@ import type { LoggerService } from '../services/logger-service';
 import type { ProviderContainerConnection, RunResult } from '@podman-desktop/api';
 import type { ProviderContainerConnectionIdentifierInfo } from '/@shared/src/models/provider-container-connection-identifier-info';
 import { QuadletType } from '/@shared/src/utils/quadlet-type';
-import type { LoggerImpl } from '../utils/logger-impl';
+import type { LoggerImpl } from '../utils/loggers/logger-impl';
 import type { PodmanWorker } from '../utils/worker/podman-worker';
 import type { ServiceQuadlet } from '/@shared/src/models/service-quadlet';
 import type { TemplateQuadlet } from '/@shared/src/models/template-quadlet';
