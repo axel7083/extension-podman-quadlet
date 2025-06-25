@@ -5,31 +5,21 @@ import { SerializeAddon } from '@xterm/addon-serialize';
 import { Terminal } from '@xterm/xterm';
 
 import { onDestroy, onMount } from 'svelte';
-import type { Readable, Unsubscriber } from 'svelte/store';
 import { getTerminalTheme } from '/@/lib/terminal/terminal-theme';
+import type { LoggerEventTarget } from '/@/events/LoggerEventTarget';
 
 let terminalXtermDiv: HTMLDivElement;
 let serializeAddon: SerializeAddon;
+let fitAddon: FitAddon;
 let shellTerminal: Terminal;
 let resizeObserver: ResizeObserver;
 
 interface Props {
-  store: Readable<string>;
+  store: LoggerEventTarget;
   readonly?: boolean;
 }
 
 let { store, readonly }: Props = $props();
-
-function writeMultilineString(xterm: Terminal, data: string, colorPrefix: string): void {
-  if (data?.includes?.('\n')) {
-    const toWrite = data.split('\n');
-    for (const s of toWrite) {
-      xterm.write(colorPrefix + s + '\n\r');
-    }
-  } else {
-    xterm.write(colorPrefix + data + '\r');
-  }
-}
 
 async function refreshTerminal(): Promise<void> {
   // missing element, return
@@ -41,7 +31,7 @@ async function refreshTerminal(): Promise<void> {
     disableStdin: readonly,
   });
 
-  const fitAddon = new FitAddon();
+  fitAddon = new FitAddon();
   serializeAddon = new SerializeAddon();
   shellTerminal.loadAddon(fitAddon);
   shellTerminal.loadAddon(serializeAddon);
@@ -57,21 +47,30 @@ async function refreshTerminal(): Promise<void> {
   fitAddon.fit();
 }
 
-let storeUnsubscriber: Unsubscriber;
+function loggerAppendListener(event: CustomEvent<string>): void {
+  shellTerminal.writeln(event.detail);
+}
+
 onMount(async () => {
   await refreshTerminal();
 
-  storeUnsubscriber = store.subscribe(value => {
-    shellTerminal.clear();
-    writeMultilineString(shellTerminal, value, '');
-  });
+  // write existing content
+  store.ready.then((logs) => {
+    logs.forEach((log) => {
+      shellTerminal.writeln(log);
+    });
+  }).catch(console.error);
+
+  // subscribe for follow-up
+  store.addEventListener('append', loggerAppendListener);
 });
 
 onDestroy(() => {
   // unsubscribe to update
-  storeUnsubscriber();
+  store.removeEventListener('append', loggerAppendListener);
   serializeAddon?.dispose();
   shellTerminal?.dispose();
+  fitAddon?.dispose();
   // Cleanup the observer on destroy
   resizeObserver?.unobserve(terminalXtermDiv);
 });

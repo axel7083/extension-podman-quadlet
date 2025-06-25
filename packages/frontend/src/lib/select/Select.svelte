@@ -10,6 +10,7 @@ export let placeholder: string | undefined = undefined;
 export let label: string | undefined = undefined;
 export let name: string | undefined = undefined;
 export let onchange: ((value: T | undefined) => void) | undefined = undefined;
+export let height: string = '32px';
 
 function handleOnChange(e: CustomEvent<T | undefined>): void {
   value = e.detail;
@@ -49,8 +50,8 @@ function handleOnClear(): void {
   --selected-item-padding="0 0 0 0"
   --list-z-index="99"
   --font-size="12px"
-  --height="32px"
-  --max-height="32px"
+  --height={height}
+  --max-height={height}
   placeholder={placeholder}
   class="!bg-[var(--pd-content-bg)] !text-[var(--pd-content-card-text)]"
   items={items}

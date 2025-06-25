@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { QuadletInfo } from '/@shared/src/models/quadlet-info';
 import { quadletsInfo } from '/@store/quadlets';
-import { DetailsPage, Tab } from '@podman-desktop/ui-svelte';
+import { DetailsPage, Tab, Checkbox } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 import Route from '/@/lib/Route.svelte';
 import { onMount, onDestroy } from 'svelte';
@@ -10,12 +10,14 @@ import ProgressBar from '/@/lib/progress/ProgressBar.svelte';
 import MonacoEditor from '/@/lib/monaco-editor/MonacoEditor.svelte';
 import QuadletActions from '/@/lib/table/QuadletActions.svelte';
 import QuadletStatus from '/@/lib/table/QuadletStatus.svelte';
-import { LoggerStore } from '/@store/logger-store';
 import XTerminal from '/@/lib/terminal/XTerminal.svelte';
 import EditorOverlay from '/@/lib/forms/EditorOverlay.svelte';
 import { QuadletType } from '/@shared/src/utils/quadlet-type';
 import KubeYamlEditor from '/@/lib/monaco-editor/KubeYamlEditor.svelte';
 import { isKubeQuadlet } from '/@/utils/quadlet';
+import TimePicker from '/@/lib/datatime/TimePicker.svelte';
+import { LoggerEventTarget } from '/@/events/LoggerEventTarget';
+
 
 interface Props {
   id: string;
@@ -41,6 +43,11 @@ let quadlet: QuadletInfo | undefined = $derived(
 );
 // the title is either the systemd service name or if undefined the last part of the path (E.g. /foo/bar.container => bar.container)
 let title: string = $derived(quadlet?.service ?? quadlet?.path.split('/').pop() ?? 'none');
+
+// filtering
+let currentBoot: boolean = $state(true);
+let since: string | undefined = $state(undefined);
+let until: string | undefined = $state(undefined);
 
 export function close(): void {
   router.goto('/');
@@ -72,36 +79,66 @@ onMount(async () => {
   createLogger().catch(console.error);
 });
 
-let logger: LoggerStore | undefined = $state();
+let loggerEvents: LoggerEventTarget | undefined = $state();
 
 async function createLogger(): Promise<void> {
   if (!quadlet) throw new Error('Quadlets not found');
 
+  // if existing, dispose logger
+  if(loggerId) {
+    console.log('dispose logger', loggerId);
+    quadletAPI.disposeLogger(loggerId).catch(console.error);
+    loggerEvents?.dispose();
+  }
+
+  console.log('creating new logger');
   loggerId = await quadletAPI.createQuadletLogger({
     quadletId: quadlet.id,
     connection: {
       providerId: providerId,
       name: connection,
     },
+    options: {
+      currentBoot: $state.snapshot(currentBoot),
+      since: $state.snapshot(since),
+      until: $state.snapshot(until),
+    },
   });
 
-  // creating logger subscriber
-  logger = new LoggerStore({
+  loggerEvents = new LoggerEventTarget({
     loggerId: loggerId,
     rpcBrowser: rpcBrowser,
-    loggerAPI: loggerAPI,
+    loggerApi: loggerAPI,
   });
-  return logger.init();
+  return loggerEvents.init();
 }
 
 onDestroy(() => {
-  logger?.dispose();
-  logger = undefined;
+  loggerEvents?.dispose();
+  loggerEvents = undefined;
   // dispose logger => will kill the process, we don't want to keep it alive if we leave the page
   if (loggerId) {
     quadletAPI.disposeLogger(loggerId).catch(console.error);
   }
 });
+
+function setCurrentBoot({ detail }: CustomEvent<boolean>): void {
+  console.log('setCurrentBoot');
+  currentBoot = detail;
+  createLogger().catch(console.error);
+}
+
+function setSince(value: string | undefined): void {
+  console.log('setSince');
+  since = value;
+  createLogger().catch(console.error);
+}
+
+function setUntil(value: string | undefined): void {
+  console.log('setUntil');
+  until = value;
+  createLogger().catch(console.error);
+}
 
 async function save(): Promise<void> {
   if (!quadlet || !quadletSource || !connection || !providerId) return;
@@ -130,6 +167,7 @@ function onchange(content: string): void {
   quadletSource = content;
 }
 </script>
+
 
 {#if quadlet}
   <DetailsPage
@@ -162,7 +200,7 @@ function onchange(content: string): void {
           url="/quadlets/{providerId}/{connection}/{id}/yaml"
           selected={$router.path === `/quadlets/${providerId}/${connection}/${id}/yaml`} />
       {/if}
-      {#if logger}
+      {#if loggerEvents}
         <!-- journalctl tab -->
         <Tab
           title="Logs"
@@ -220,16 +258,36 @@ function onchange(content: string): void {
 
         <!-- quadlet -dryrun output -->
         <Route path="/logs">
-          <div class="flex py-2 h-[40px]">
+          <div class="flex py-2 h-[40px] items-center justify-between px-2">
             <span
               role="banner"
               aria-label="journactl command"
-              class="block w-auto text-sm font-medium whitespace-nowrap leading-6 text-[var(--pd-content-text)] pl-2 pr-2">
+              class="block w-auto text-sm font-medium whitespace-nowrap leading-6 text-[var(--pd-content-text)]">
               journalctl --user --follow --unit={quadlet.service}
             </span>
+
+            <div class="flex gap-x-2">
+              <!-- Current boot checbox -->
+              <div class="flex flex-row align-items items-center">
+                <Checkbox
+                  title="Current boot"
+                  checked={currentBoot}
+                  on:click={setCurrentBoot}
+                />
+                <span>Current boot</span>
+              </div>
+
+              <!-- Since timepicker -->
+              <TimePicker onchange={setSince} value={since} placeholder="Since" />
+
+              <!-- Until timepicker -->
+              <TimePicker onchange={setUntil} value={until} placeholder="Until"/>
+            </div>
           </div>
-          {#if logger}
-            <XTerminal store={logger} />
+          {#if loggerEvents}
+            {#key loggerId}
+              <XTerminal store={loggerEvents} />
+            {/key}
           {/if}
         </Route>
       </div>

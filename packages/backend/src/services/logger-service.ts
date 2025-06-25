@@ -3,7 +3,7 @@
  */
 import type { Disposable, Webview } from '@podman-desktop/api';
 import { randomUUID } from 'node:crypto';
-import { LoggerImpl } from '../utils/logger-impl';
+import { LoggerImpl } from '../utils/loggers/logger-impl';
 
 interface Dependencies {
   webview: Webview;
@@ -20,7 +20,7 @@ export class LoggerService implements Disposable {
     return randomUUID().toString();
   }
 
-  getLogs(loggerId: string): string {
+  getLogs(loggerId: string): Array<string> {
     const logger = this.getLogger(loggerId);
     return logger.all();
   }

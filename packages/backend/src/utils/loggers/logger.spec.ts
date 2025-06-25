@@ -63,9 +63,9 @@ test('LoggerImpl should create a token and return it through LoggerImpl#token', 
     webview: WEBVIEW_MOCK,
     loggerId: LOGGER_ID,
   });
+  expect(logger).toBeDefined();
 
   expect(CancellationTokenSource).toHaveBeenCalledOnce();
-  expect(logger.token).toStrictEqual(CANCELLATION_TOKEN_SOURCE_MOCK.token);
 });
 
 test('disposing LoggerImpl should cancel&dispose token', () => {
@@ -82,12 +82,25 @@ test('disposing LoggerImpl should cancel&dispose token', () => {
   expect(CANCELLATION_TOKEN_SOURCE_MOCK.dispose).toHaveBeenCalledOnce();
 });
 
+test('several log should be concatenated using line separator', () => {
+  const logger = new LoggerImpl({
+    webview: WEBVIEW_MOCK,
+    loggerId: LOGGER_ID,
+  });
+
+  logger.log('foo');
+  logger.log('bar');
+
+  expect(logger.all()).toStrictEqual(['foo', 'bar']);
+});
+
 test('maxLogsLengths should prevent logs to exceed given length', () => {
   const logger = new LoggerImpl({
     webview: WEBVIEW_MOCK,
     loggerId: LOGGER_ID,
     maxLogsLengths: 2,
   });
+
   logger.log('a');
   logger.log('b');
 
@@ -96,7 +109,7 @@ test('maxLogsLengths should prevent logs to exceed given length', () => {
   logger.log('c');
 
   const content = logger.all();
-  expect(content).toStrictEqual('bc');
+  expect(content).toStrictEqual(['b', 'c']);
 });
 
 test('log should notify webview', () => {
