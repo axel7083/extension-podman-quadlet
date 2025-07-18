@@ -43,3 +43,12 @@ export interface Quadlet {
    */
   isTemplate: boolean;
 }
+
+export interface ServiceQuadlet extends Quadlet {
+  service: string;
+}
+
+
+ export function isServiceQuadlet(quadlet: Quadlet): quadlet is ServiceQuadlet {
+  return typeof quadlet.service !== 'undefined';
+}
