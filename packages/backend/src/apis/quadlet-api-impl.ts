@@ -13,6 +13,7 @@ import type { LoggerService } from '../services/logger-service';
 import type { SynchronisationInfo } from '/@shared/src/models/synchronisation';
 import type { Template } from '/@shared/src/models/template';
 import type { PodmanWorker } from '../utils/worker/podman-worker';
+import { isServiceQuadlet, type Quadlet, type ServiceQuadlet } from '../models/quadlet';
 
 interface Dependencies {
   quadlet: QuadletService;
@@ -35,13 +36,24 @@ export class QuadletApiImpl extends QuadletApi {
     return this.dependencies.quadlet.collectPodmanQuadlet();
   }
 
-  override async start(connection: ProviderContainerConnectionIdentifierInfo, id: string): Promise<boolean> {
-    // ensure the quadlet exists & have an associated systemd service
-    const quadlet = this.dependencies.quadlet.getQuadlet(id);
-    if (!quadlet.service)
-      throw new Error(`cannot start quadlet: quadlet with id ${id} does not have an associated systemd service`);
+  // ensure the quadlet exists & have an associated systemd service
+  private checkQuadlet(quadlet: Quadlet): ServiceQuadlet {
+    if (!isServiceQuadlet(quadlet)) throw new Error(`quadlet with id ${quadlet.id} does not have an associated systemd service`);
+    if (quadlet.isTemplate) throw new Error(`quadlet with id ${quadlet.id} is a template`);
+    return quadlet;
+  }
 
-    if (quadlet.isTemplate) throw new Error(`cannot start quadlet: quadlet with id ${id} is a template`);
+  override async start(connection: ProviderContainerConnectionIdentifierInfo, id: string): Promise<boolean> {
+    let quadlet: ServiceQuadlet;
+
+    try {
+      quadlet = this.checkQuadlet(this.dependencies.quadlet.getQuadlet(id));
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`cannot start quadlet: ${error.message}`);
+      }
+      throw error;
+    }
 
     const providerConnection = this.dependencies.providers.getProviderContainerConnection(connection);
 
@@ -57,12 +69,16 @@ export class QuadletApiImpl extends QuadletApi {
   }
 
   override async stop(connection: ProviderContainerConnectionIdentifierInfo, id: string): Promise<boolean> {
-    // ensure the quadlet exists & have an associated systemd service
-    const quadlet = this.dependencies.quadlet.getQuadlet(id);
-    if (!quadlet.service)
-      throw new Error(`cannot stop quadlet: quadlet with id ${id} does not have an associated systemd service`);
+    let quadlet: ServiceQuadlet;
 
-    if (quadlet.isTemplate) throw new Error(`cannot stop quadlet: quadlet with id ${id} is a template`);
+    try {
+      quadlet = this.checkQuadlet(this.dependencies.quadlet.getQuadlet(id));
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`cannot stop quadlet: ${error.message}`);
+      }
+      throw error;
+    }
 
     const providerConnection = this.dependencies.providers.getProviderContainerConnection(connection);
 
