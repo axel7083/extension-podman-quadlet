@@ -44,6 +44,9 @@ import { DialogService } from './dialog-service';
 import { DialogApiImpl } from '../apis/dialog-api-impl';
 import { DialogApi } from '/@shared/src/apis/dialog-api';
 import { PodletJsService } from './podlet-js-service';
+import { PodApiImpl } from '../apis/pod-api-impl';
+import { PodApi } from '/@shared/src/apis/pod-api';
+import { PodService } from './pod-service';
 
 interface Dependencies {
   extensionContext: ExtensionContext;
@@ -152,13 +155,22 @@ export class MainService implements Disposable, AsyncInit {
     await quadletService.init();
     this.#disposables.push(quadletService);
 
-    // Basic manipulation of images
+    // Basic manipulation of pods
     const images = new ImageService({
       containers: this.dependencies.containers,
       providers: providers,
     });
     await images.init();
     this.#disposables.push(images);
+
+    // Basic manipulation of pods
+    const pods = new PodService({
+      containers: this.dependencies.containers,
+      providers: providers,
+      containerService: containers,
+    });
+    await pods.init();
+    this.#disposables.push(pods);
 
     // Register/execute commands
     const command = new CommandService({
@@ -174,6 +186,7 @@ export class MainService implements Disposable, AsyncInit {
     const podletJS = new PodletJsService({
       containers: containers,
       images: images,
+      pods: pods,
       telemetry: this.#telemetry,
     });
 
@@ -215,6 +228,12 @@ export class MainService implements Disposable, AsyncInit {
       images: images,
     });
     rpcExtension.registerInstance<ImageApi>(ImageApi, imageApiImpl);
+
+    // pod api
+    const podApiImpl = new PodApiImpl({
+      pods: pods,
+    });
+    rpcExtension.registerInstance<PodApi>(PodApi, podApiImpl);
 
     // podlet api
     const podletApiImpl = new PodletApiImpl({

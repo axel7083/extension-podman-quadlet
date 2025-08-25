@@ -15,9 +15,14 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { ContainerGenerator } from './containers/container-generator';
-import { ImageGenerator } from './images/image-generator';
-import { Compose } from './compose/compose';
-import { PodGenerator } from './pods/pod-generator';
 
-export { ImageGenerator, Compose, ContainerGenerator, PodGenerator };
+import type { ProviderContainerConnectionIdentifierInfo } from './provider-container-connection-identifier-info';
+import type { SimpleContainerInfo } from './simple-container-info';
+
+export interface SimplePodInfo {
+  status: 'Running' | 'Exited' | string;
+  id: string;
+  name: string;
+  containers: Array<SimpleContainerInfo>;
+  connection: ProviderContainerConnectionIdentifierInfo;
+}

@@ -15,18 +15,22 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type { ProviderContainerConnectionIdentifierInfo } from '/@shared/src/models/provider-container-connection-identifier-info';
+import type {
+  ProviderContainerConnectionIdentifierInfo
+} from '/@shared/src/models/provider-container-connection-identifier-info';
 import { QuadletType } from '/@shared/src/utils/quadlet-type';
 import type { ContainerService } from './container-service';
 import type { ImageService } from './image-service';
-import type { ContainerInspectInfo, ImageInspectInfo, TelemetryLogger } from '@podman-desktop/api';
-import { ContainerGenerator, Compose, ImageGenerator } from 'podlet-js';
+import type { ContainerInspectInfo, ImageInspectInfo, PodInspectInfo, TelemetryLogger } from '@podman-desktop/api';
+import { Compose, ContainerGenerator, ImageGenerator, PodGenerator } from 'podlet-js';
 import { readFile } from 'node:fs/promises';
 import { TelemetryEvents } from '../utils/telemetry-events';
+import type { PodService } from './pod-service';
 
 interface Dependencies {
   containers: ContainerService;
   images: ImageService;
+  pods: PodService;
   telemetry: TelemetryLogger;
 }
 
@@ -64,6 +68,13 @@ export class PodletJsService {
     }).generate();
   }
 
+  protected async generatePod(engineId: string, podId: string): Promise<string> {
+    const pod: PodInspectInfo = await this.dependencies.pods.inspectPod(engineId, podId);
+    return new PodGenerator({
+      pod: pod,
+    }).generate();
+  }
+
   public async generate(options: {
     connection: ProviderContainerConnectionIdentifierInfo;
     type: QuadletType;
@@ -82,6 +93,8 @@ export class PodletJsService {
           return await this.generateContainer(engineId, options.resourceId);
         case QuadletType.IMAGE:
           return await this.generateImage(engineId, options.resourceId);
+        case QuadletType.POD:
+          return await this.generatePod(engineId, options.resourceId);
         default:
           throw new Error(`cannot generate quadlet type ${options.type}: unsupported`);
       }

@@ -49,6 +49,8 @@ import { ImageApi } from '/@shared/src/apis/image-api';
 import { PodletApi } from '/@shared/src/apis/podlet-api';
 import { RoutingApi } from '/@shared/src/apis/routing-api';
 import { DialogApi } from '/@shared/src/apis/dialog-api';
+import { PodApiImpl } from '../apis/pod-api-impl';
+import { PodApi } from '/@shared/src/apis/pod-api';
 
 // mock message-proxy
 vi.mock('/@shared/src/messages/message-proxy');
@@ -65,6 +67,7 @@ vi.mock('./container-service');
 vi.mock('./image-service');
 vi.mock('./logger-service');
 vi.mock('./dialog-service');
+vi.mock('./pod-service');
 
 const EXTENSION_CONTEXT_MOCK: ExtensionContext = {} as unknown as ExtensionContext;
 const WINDOW_API_MOCK: typeof window = {} as unknown as typeof window;
@@ -116,6 +119,7 @@ test('ensure init register all APIs', async () => {
     [PodletApi, PodletApiImpl],
     [RoutingApi, RoutingApiImpl],
     [DialogApi, DialogApiImpl],
+    [PodApi, PodApiImpl],
   ]);
 
   for (const [key, value] of APIS.entries()) {

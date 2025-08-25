@@ -15,9 +15,23 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { ContainerGenerator } from './containers/container-generator';
-import { ImageGenerator } from './images/image-generator';
-import { Compose } from './compose/compose';
-import { PodGenerator } from './pods/pod-generator';
+import type {
+  ProviderContainerConnectionIdentifierInfo,
+} from '/@shared/src/models/provider-container-connection-identifier-info';
+import { PodApi } from '/@shared/src/apis/pod-api';
+import type { SimplePodInfo } from '/@shared/src/models/simple-pod-info';
+import type { PodService } from '../services/pod-service';
 
-export { ImageGenerator, Compose, ContainerGenerator, PodGenerator };
+interface Dependencies {
+  pods: PodService;
+}
+
+export class PodApiImpl extends PodApi {
+  constructor(protected dependencies: Dependencies) {
+    super();
+  }
+
+  override async all(provider: ProviderContainerConnectionIdentifierInfo): Promise<Array<SimplePodInfo>> {
+    return this.dependencies.pods.all(provider);
+  }
+}

@@ -15,9 +15,13 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { ContainerGenerator } from './containers/container-generator';
-import { ImageGenerator } from './images/image-generator';
-import { Compose } from './compose/compose';
-import { PodGenerator } from './pods/pod-generator';
+import type {
+  ProviderContainerConnectionIdentifierInfo,
+} from '../models/provider-container-connection-identifier-info';
+import type { SimplePodInfo } from '../models/simple-pod-info';
 
-export { ImageGenerator, Compose, ContainerGenerator, PodGenerator };
+export abstract class PodApi {
+  static readonly CHANNEL: string = 'pod-api';
+
+  abstract all(provider: ProviderContainerConnectionIdentifierInfo): Promise<Array<SimplePodInfo>>;
+}
