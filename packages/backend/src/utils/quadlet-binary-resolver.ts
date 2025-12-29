@@ -33,18 +33,24 @@ export class QuadletBinaryResolver {
     if (this.cachedPath) return this.cachedPath;
 
     options?.logger?.log('getting quadlet binary using systemd-path');
-    const result = await this.executor.exec('systemd-path', {
-      args: ['systemd-system-generator'],
-      token: options?.token,
-    });
 
-    const systemdGeneratorDirectory = result.stdout.trim();
-    if (!isAbsolute(systemdGeneratorDirectory))
-      throw new Error(`systemd-system-generator directory is not absolute, received "${systemdGeneratorDirectory}".`);
+    try {
+      const result = await this.executor.exec('systemd-path', {
+        args: ['systemd-system-generator'],
+        token: options?.token,
+      });
 
-    const symlink = join(systemdGeneratorDirectory, PODMAN_SYSTEMD_GENERATOR);
-    const path = await this.executor.realPath(symlink);
-    this.cachedPath = path;
-    return path;
+      const systemdGeneratorDirectory = result.stdout.trim();
+      if (!isAbsolute(systemdGeneratorDirectory))
+        throw new Error(`systemd-system-generator directory is not absolute, received "${systemdGeneratorDirectory}".`);
+
+      const symlink = join(systemdGeneratorDirectory, PODMAN_SYSTEMD_GENERATOR);
+      const path = await this.executor.realPath(symlink);
+      this.cachedPath = path;
+      return path;
+    } catch (err: unknown) {
+      options?.logger?.error('something went wrong while getting the quadlet binary', err);
+      throw err;
+    }
   }
 }

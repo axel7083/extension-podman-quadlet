@@ -118,14 +118,8 @@ export abstract class PodmanWorker implements Disposable, AsyncInit {
     token?: CancellationToken;
     env?: Record<string, string>;
   }): Promise<RunResult | RunError> {
-    let binary: string;
-    try {
-      binary = await this.quadletBinaryResolver.resolve(options);
-    } catch (err: unknown) {
-      options?.logger?.error('something went wrong while getting the quadlet binary', err);
-      throw err;
-    }
-
+    const binary = await this.quadletBinaryResolver.resolve(options);
+    
     return this.exec(binary, options).catch((err: unknown) => {
       // check err is an RunError
       if (isRunError(err)) return err;
