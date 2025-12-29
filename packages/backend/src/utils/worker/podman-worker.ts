@@ -25,13 +25,16 @@ import type {
 } from '@podman-desktop/api';
 import type { AsyncInit } from '../async-init';
 import { isRunError } from '../run-error';
-import { QuadletBinaryResolver, QuadletBinaryResolverOptions, type ExecOptions } from './quadlet-binary-resolver';
+import { QuadletBinaryResolver, type ExecOptions } from './quadlet-binary-resolver';
 
 export abstract class PodmanWorker implements Disposable, AsyncInit {
   protected quadletBinaryResolver: QuadletBinaryResolver;
 
   constructor(protected connection: ProviderContainerConnection) {
-    this.quadletBinaryResolver = new QuadletBinaryResolver({exec: this.exec, realPath: this.realPath});
+    this.quadletBinaryResolver = new QuadletBinaryResolver({
+      exec: (command, options) => this.exec(command, options),
+      realPath: path => this.realPath(path),
+    });
   }
 
   /**
