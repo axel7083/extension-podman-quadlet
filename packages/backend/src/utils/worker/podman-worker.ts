@@ -25,16 +25,13 @@ import type {
 } from '@podman-desktop/api';
 import type { AsyncInit } from '../async-init';
 import { isRunError } from '../run-error';
-import { QuadletBinaryResolver, type ExecOptions } from './quadlet-binary-resolver';
+import { QuadletBinaryResolver } from './quadlet-binary-resolver';
 
 export abstract class PodmanWorker implements Disposable, AsyncInit {
   protected quadletBinaryResolver: QuadletBinaryResolver;
 
   constructor(protected connection: ProviderContainerConnection) {
-    this.quadletBinaryResolver = new QuadletBinaryResolver({
-      exec: (command, options) => this.exec(command, options),
-      realPath: path => this.realPath(path),
-    });
+    this.quadletBinaryResolver = new QuadletBinaryResolver(this);
   }
 
   /**
@@ -71,7 +68,12 @@ export abstract class PodmanWorker implements Disposable, AsyncInit {
    * @param command
    * @param options
    */
-  abstract exec(command: string, options?: ExecOptions): Promise<RunResult>;
+  abstract exec(command: string, options?: {
+    args?: string[];
+    logger?: Logger;
+    token?: CancellationToken;
+    env?: Record<string, string>;
+  }): Promise<RunResult>;
 
   /**
    * systemctl has a weird specificity to change the return code depending on the status.

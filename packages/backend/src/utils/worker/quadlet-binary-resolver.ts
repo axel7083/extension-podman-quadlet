@@ -16,29 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { CancellationToken, Logger, RunResult } from '@podman-desktop/api';
+import type { CancellationToken, Logger } from '@podman-desktop/api';
 import { isAbsolute, join } from 'node:path/posix';
+import { PodmanWorker } from './podman-worker';
 
 export const PODMAN_SYSTEMD_GENERATOR = 'podman-system-generator';
-
-export interface ExecOptions {
-  args?: string[];
-  logger?: Logger;
-  token?: CancellationToken;
-  env?: Record<string, string>;
-}
-
-export interface QuadletBinaryExecutor {
-  exec(command: string, options?: ExecOptions): Promise<RunResult>;
-  realPath(path: string): Promise<string>;
-}
 
 export interface QuadletBinaryResolverOptions { token?: CancellationToken; logger?: Logger }
 
 export class QuadletBinaryResolver {
   private cachedPath: string | undefined;
 
-  constructor(private executor: QuadletBinaryExecutor) {}
+  constructor(private executor: PodmanWorker) {}
 
   async resolve(options?: QuadletBinaryResolverOptions): Promise<string> {
     if (this.cachedPath) return this.cachedPath;
