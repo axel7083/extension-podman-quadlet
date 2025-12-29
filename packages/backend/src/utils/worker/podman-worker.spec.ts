@@ -138,15 +138,13 @@ describe('systemctlExec', () => {
 });
 
 describe('getQuadletBinary', () => {
-  test('should cache on success', async () => {
+  test('should call resolver', async () => {
     const worker = getPodmanWorkerImpl();
 
     vi.mocked(QuadletBinaryResolver.prototype.resolve).mockResolvedValue(QUADLET_BINARY_PATH_MOCK);
 
-    for (let i = 0; i < 10; i++) {
-      const path = await worker.getQuadletBinary();
-      expect(path).toEqual(QUADLET_BINARY_PATH_MOCK);
-    }
+    const path = await worker.getQuadletBinary();
+    expect(path).toEqual(QUADLET_BINARY_PATH_MOCK);
 
     expect(QuadletBinaryResolver.prototype.resolve).toHaveBeenCalledOnce();
   });

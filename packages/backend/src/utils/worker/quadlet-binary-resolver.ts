@@ -36,9 +36,13 @@ export interface QuadletBinaryExecutor {
 export interface QuadletBinaryResolverOptions { token?: CancellationToken; logger?: Logger }
 
 export class QuadletBinaryResolver {
+  private cachedPath: string | undefined;
+
   constructor(private executor: QuadletBinaryExecutor) {}
 
   async resolve(options?: QuadletBinaryResolverOptions): Promise<string> {
+    if (this.cachedPath) return this.cachedPath;
+
     options?.logger?.log('getting quadlet binary using systemd-path');
     const result = await this.executor.exec('systemd-path', {
       args: ['systemd-system-generator'],
@@ -51,6 +55,7 @@ export class QuadletBinaryResolver {
 
     const symlink = join(systemdGeneratorDirectory, PODMAN_SYSTEMD_GENERATOR);
     const path = await this.executor.realPath(symlink);
+    this.cachedPath = path;
     return path;
   }
 }

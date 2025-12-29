@@ -28,9 +28,11 @@ import { isRunError } from '../run-error';
 import { QuadletBinaryResolver, QuadletBinaryResolverOptions, type ExecOptions } from './quadlet-binary-resolver';
 
 export abstract class PodmanWorker implements Disposable, AsyncInit {
-  protected quadlet: string | undefined = undefined;
+  protected quadletBinaryResolver: QuadletBinaryResolver;
 
-  constructor(protected connection: ProviderContainerConnection) {}
+  constructor(protected connection: ProviderContainerConnection) {
+    this.quadletBinaryResolver = new QuadletBinaryResolver({exec: this.exec, realPath: this.realPath});
+  }
 
   /**
    * Return the content of the file at path
@@ -110,11 +112,8 @@ export abstract class PodmanWorker implements Disposable, AsyncInit {
    * @protected
    */
   protected async getQuadletBinary(options?: QuadletBinaryResolverOptions): Promise<string> {
-    if (this.quadlet) return this.quadlet;
-
     try {
-      this.quadlet = await new QuadletBinaryResolver({exec: this.exec, realPath: this.realPath}).resolve(options);
-      return this.quadlet;
+      return this.quadletBinaryResolver.resolve(options);
     } catch (err: unknown) {
       options?.logger?.error('something went wrong while getting the quadlet binary', err);
       throw err;

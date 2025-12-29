@@ -82,4 +82,33 @@ describe('QuadletBinaryResolver', () => {
 
     await expect(resolver.resolve()).rejects.toThrow('systemd-system-generator directory is not absolute');
   });
+
+  test('should cache on success', async () => {
+    const resolver = new QuadletBinaryResolver(executorMock);
+
+    vi.mocked(executorMock.exec).mockImplementation(async command => {
+      switch (command) {
+        // if we try to get the systemd-path let's return it
+        case 'systemd-path':
+          return {
+            stderr: '',
+            stdout: '/usr/lib/systemd/system-generators',
+            command: 'systemd-path',
+          };
+        // if we try to exec on the quadlet binary return dummy result
+        case QUADLET_BINARY_PATH_MOCK:
+          return RUN_RESULT_MOCK;
+        default:
+          throw new Error(`command ${command} not supported`);
+      }
+    });
+    vi.mocked(executorMock.realPath).mockResolvedValue(QUADLET_BINARY_PATH_MOCK);
+
+    for (let i = 0; i < 10; i++) {
+      const path = await resolver.resolve();
+      expect(path).toEqual(QUADLET_BINARY_PATH_MOCK);
+    }
+
+    expect(executorMock.exec).toHaveBeenCalledOnce();
+  });
 });
