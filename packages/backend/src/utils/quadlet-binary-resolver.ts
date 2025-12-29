@@ -22,14 +22,12 @@ import { PodmanWorker } from './worker/podman-worker';
 
 export const PODMAN_SYSTEMD_GENERATOR = 'podman-system-generator';
 
-export interface QuadletBinaryResolverOptions { token?: CancellationToken; logger?: Logger }
-
 export class QuadletBinaryResolver {
   private cachedPath: string | undefined;
 
   constructor(private executor: PodmanWorker) {}
 
-  async resolve(options?: QuadletBinaryResolverOptions): Promise<string> {
+  async resolve(options?: { token?: CancellationToken; logger?: Logger }): Promise<string> {
     if (this.cachedPath) return this.cachedPath;
 
     options?.logger?.log('getting quadlet binary using systemd-path');
