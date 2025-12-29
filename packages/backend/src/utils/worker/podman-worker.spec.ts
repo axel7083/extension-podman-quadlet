@@ -19,7 +19,7 @@ import type { Logger, CancellationToken, RunResult, ProviderContainerConnection,
 import { PodmanWorker } from './podman-worker';
 
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { QuadletBinaryResolver } from './quadlet-binary-resolver';
+import { QuadletBinaryResolver } from '../quadlet-binary-resolver';
 
 const WSL_PROVIDER_CONNECTION_MOCK: ProviderContainerConnection = {
   connection: {
@@ -49,7 +49,7 @@ const RUN_ERROR_MOCK: RunError = {
 
 const QUADLET_BINARY_PATH_MOCK = '/usr/libexec/podman/quadlet';
 
-vi.mock(import('./quadlet-binary-resolver'))
+vi.mock(import('../quadlet-binary-resolver'))
 
 class PodmanWorkerImpl extends PodmanWorker {
   constructor(

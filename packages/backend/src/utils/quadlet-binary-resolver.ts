@@ -18,7 +18,7 @@
 
 import type { CancellationToken, Logger } from '@podman-desktop/api';
 import { isAbsolute, join } from 'node:path/posix';
-import { PodmanWorker } from './podman-worker';
+import { PodmanWorker } from './worker/podman-worker';
 
 export const PODMAN_SYSTEMD_GENERATOR = 'podman-system-generator';
 

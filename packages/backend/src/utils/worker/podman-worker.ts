@@ -25,7 +25,7 @@ import type {
 } from '@podman-desktop/api';
 import type { AsyncInit } from '../async-init';
 import { isRunError } from '../run-error';
-import { QuadletBinaryResolver } from './quadlet-binary-resolver';
+import { QuadletBinaryResolver } from '../quadlet-binary-resolver';
 
 export abstract class PodmanWorker implements Disposable, AsyncInit {
   protected quadletBinaryResolver: QuadletBinaryResolver;
