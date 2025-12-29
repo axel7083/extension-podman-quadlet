@@ -101,26 +101,6 @@ export abstract class PodmanWorker implements Disposable, AsyncInit {
   }
 
   /**
-   * Following discussion with @Luap99 from the Podman team, we found a way to determine the quadlet binary path.
-   * In most distros it will be located in /usr/libexec/podman/quadlet but this may differ.
-   *
-   * Reported in https://github.com/podman-desktop/extension-podman-quadlet/issues/837
-   * users on Nixos have the Quadlet binary on a different location
-   *
-   * Determine the path `$ realpath $(systemd-path systemd-system-generator)/podman-system-generator`
-   * @param options
-   * @protected
-   */
-  protected async getQuadletBinary(options?: QuadletBinaryResolverOptions): Promise<string> {
-    try {
-      return this.quadletBinaryResolver.resolve(options);
-    } catch (err: unknown) {
-      options?.logger?.error('something went wrong while getting the quadlet binary', err);
-      throw err;
-    }
-  }
-
-  /**
    * Execute the `quadlet` command on the podman connection
    * @param options the options for the exec logic
    */
@@ -130,7 +110,14 @@ export abstract class PodmanWorker implements Disposable, AsyncInit {
     token?: CancellationToken;
     env?: Record<string, string>;
   }): Promise<RunResult | RunError> {
-    const binary = await this.getQuadletBinary(options);
+    let binary: string;
+    try {
+      binary = await this.quadletBinaryResolver.resolve(options);
+    } catch (err: unknown) {
+      options?.logger?.error('something went wrong while getting the quadlet binary', err);
+      throw err;
+    }
+
     return this.exec(binary, options).catch((err: unknown) => {
       // check err is an RunError
       if (isRunError(err)) return err;
