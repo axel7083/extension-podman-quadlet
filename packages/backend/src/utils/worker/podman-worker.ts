@@ -113,7 +113,7 @@ export abstract class PodmanWorker implements Disposable, AsyncInit {
     if (this.quadlet) return this.quadlet;
 
     try {
-      this.quadlet = await new QuadletBinaryResolver(this).resolve(options);
+      this.quadlet = await new QuadletBinaryResolver({exec: this.exec, realPath: this.realPath}).resolve(options);
       return this.quadlet;
     } catch (err: unknown) {
       options?.logger?.error('something went wrong while getting the quadlet binary', err);
