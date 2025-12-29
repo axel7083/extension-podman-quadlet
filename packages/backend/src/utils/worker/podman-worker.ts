@@ -77,6 +77,7 @@ export abstract class PodmanWorker implements Disposable, AsyncInit {
       env?: Record<string, string>;
     },
   ): Promise<RunResult>;
+
   /**
    * systemctl has a weird specificity to change the return code depending on the status.
    * | value   | Description in LSB                             | Use in systemd                     |
