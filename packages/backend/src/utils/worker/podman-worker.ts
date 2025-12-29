@@ -25,9 +25,7 @@ import type {
 } from '@podman-desktop/api';
 import type { AsyncInit } from '../async-init';
 import { isRunError } from '../run-error';
-import { isAbsolute, join } from 'node:path/posix';
-
-export const PODMAN_SYSTEMD_GENERATOR = 'podman-system-generator';
+import { QuadletBinaryResolver, QuadletBinaryResolverOptions, type ExecOptions } from './quadlet-binary-resolver';
 
 export abstract class PodmanWorker implements Disposable, AsyncInit {
   protected quadlet: string | undefined = undefined;
@@ -68,15 +66,7 @@ export abstract class PodmanWorker implements Disposable, AsyncInit {
    * @param command
    * @param options
    */
-  abstract exec(
-    command: string,
-    options?: {
-      args?: string[];
-      logger?: Logger;
-      token?: CancellationToken;
-      env?: Record<string, string>;
-    },
-  ): Promise<RunResult>;
+  abstract exec(command: string, options?: ExecOptions): Promise<RunResult>;
 
   /**
    * systemctl has a weird specificity to change the return code depending on the status.
@@ -119,24 +109,12 @@ export abstract class PodmanWorker implements Disposable, AsyncInit {
    * @param options
    * @protected
    */
-  protected async getQuadletBinary(options?: { token?: CancellationToken; logger?: Logger }): Promise<string> {
+  protected async getQuadletBinary(options?: QuadletBinaryResolverOptions): Promise<string> {
     if (this.quadlet) return this.quadlet;
 
     try {
-      options?.logger?.log('getting quadlet binary using systemd-path');
-      const result = await this.exec('systemd-path', {
-        args: ['systemd-system-generator'],
-        token: options?.token,
-      });
-
-      const systemdGeneratorDirectory = result.stdout.trim();
-      if (!isAbsolute(systemdGeneratorDirectory))
-        throw new Error(`systemd-system-generator directory is not absolute, received "${systemdGeneratorDirectory}".`);
-
-      const symlink = join(systemdGeneratorDirectory, PODMAN_SYSTEMD_GENERATOR);
-      const path = await this.realPath(symlink);
-      this.quadlet = path;
-      return path;
+      this.quadlet = await new QuadletBinaryResolver(this).resolve(options);
+      return this.quadlet;
     } catch (err: unknown) {
       options?.logger?.error('something went wrong while getting the quadlet binary', err);
       throw err;
