@@ -32,15 +32,31 @@ beforeEach(() => {
   vi.resetAllMocks();
 });
 
+const RUN_RESULT_MOCK: RunResult = {
+  stdout: '[]',
+  stderr: '',
+  command: 'dummy-command',
+};
+
 describe('QuadletBinaryResolver', () => {
   test('should return the quadlet binary path', async () => {
     const resolver = new QuadletBinaryResolver(executorMock);
-
-    vi.mocked(executorMock.exec).mockResolvedValue({
-      stderr: '',
-      stdout: '/usr/lib/systemd/system-generators',
-      command: 'systemd-path',
-    } as RunResult);
+    vi.mocked(executorMock.exec).mockImplementation(async command => {
+      switch (command) {
+        // if we try to get the systemd-path let's return it
+        case 'systemd-path':
+          return {
+            stderr: '',
+            stdout: '/usr/lib/systemd/system-generators',
+            command: 'systemd-path',
+          };
+        // if we try to exec on the quadlet binary return dummy result
+        case QUADLET_BINARY_PATH_MOCK:
+          return RUN_RESULT_MOCK;
+        default:
+          throw new Error(`command ${command} not supported`);
+      }
+    });
     vi.mocked(executorMock.realPath).mockResolvedValue(QUADLET_BINARY_PATH_MOCK);
 
     const path = await resolver.resolve();
