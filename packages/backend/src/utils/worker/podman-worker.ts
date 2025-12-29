@@ -68,13 +68,15 @@ export abstract class PodmanWorker implements Disposable, AsyncInit {
    * @param command
    * @param options
    */
-  abstract exec(command: string, options?: {
-    args?: string[];
-    logger?: Logger;
-    token?: CancellationToken;
-    env?: Record<string, string>;
-  }): Promise<RunResult>;
-
+  abstract exec(
+    command: string,
+    options?: {
+      args?: string[];
+      logger?: Logger;
+      token?: CancellationToken;
+      env?: Record<string, string>;
+    },
+  ): Promise<RunResult>;
   /**
    * systemctl has a weird specificity to change the return code depending on the status.
    * | value   | Description in LSB                             | Use in systemd                     |
