@@ -68,10 +68,6 @@ class PodmanWorkerImpl extends PodmanWorker {
     super(connection);
   }
 
-  override async getQuadletBinary(options?: { token?: CancellationToken; logger?: Logger }): Promise<string> {
-    return super.getQuadletBinary(options);
-  }
-
   override realPath(path: string): Promise<string> {
     return this.callbacks.realpath(path);
   }
@@ -137,23 +133,10 @@ describe('systemctlExec', () => {
   });
 });
 
-describe('getQuadletBinary', () => {
-  test('should call resolver', async () => {
-    const worker = getPodmanWorkerImpl();
-
-    vi.mocked(QuadletBinaryResolver.prototype.resolve).mockResolvedValue(QUADLET_BINARY_PATH_MOCK);
-
-    const path = await worker.getQuadletBinary();
-    expect(path).toEqual(QUADLET_BINARY_PATH_MOCK);
-
-    expect(QuadletBinaryResolver.prototype.resolve).toHaveBeenCalledOnce();
-  });
-});
-
 describe('quadletExec', () => {
   test('RunResult should passthrough', async () => {
     const worker = getPodmanWorkerImpl();
-    vi.spyOn(worker, 'getQuadletBinary').mockResolvedValue(QUADLET_BINARY_PATH_MOCK);
+    vi.mocked(QuadletBinaryResolver.prototype.resolve).mockResolvedValue(QUADLET_BINARY_PATH_MOCK);
 
     vi.mocked(worker.callbacks.exec).mockResolvedValue(RUN_RESULT_MOCK);
 
@@ -169,7 +152,7 @@ describe('quadletExec', () => {
 
   test('RunError should be properly catch', async () => {
     const worker = getPodmanWorkerImpl();
-    vi.spyOn(worker, 'getQuadletBinary').mockResolvedValue(QUADLET_BINARY_PATH_MOCK);
+    vi.mocked(QuadletBinaryResolver.prototype.resolve).mockResolvedValue(QUADLET_BINARY_PATH_MOCK);
 
     vi.mocked(worker.callbacks.exec).mockRejectedValue(RUN_ERROR_MOCK);
 
