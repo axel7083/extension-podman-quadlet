@@ -15,8 +15,7 @@ import XTerminal from '/@/lib/terminal/XTerminal.svelte';
 import EditorOverlay from '/@/lib/forms/EditorOverlay.svelte';
 import { isServiceQuadlet } from '/@shared/src/models/service-quadlet';
 import { isTemplateQuadlet } from '/@shared/src/models/template-quadlet.js';
-import IconTab from '/@/lib/tab/IconTab.svelte';
-import { faPaperclip } from '@fortawesome/free-solid-svg-icons/faPaperclip';
+import FileTab from '/@/lib/tab/FileTab.svelte';
 import FileEditor from '/@/lib/monaco-editor/FileEditor.svelte';
 
 interface Props {
@@ -178,12 +177,7 @@ function onchange(content: string): void {
           selected={$router.path === `/quadlets/${providerId}/${connection}/${id}/logs`} />
       {/if}
       {#each quadlet.files as file (file.path)}
-        {@const fileId = encodeURIComponent(file.path)}
-        <IconTab
-          title={file.name}
-          url="/quadlets/{providerId}/{connection}/{id}/file/{fileId}"
-          icon={faPaperclip}
-          selected={$router.path === `/quadlets/${providerId}/${connection}/${id}/file/${fileId}`} />
+        <FileTab {file} {providerId} {id} {connection} />
       {/each}
     {/snippet}
     {#snippet iconSnippet()}
