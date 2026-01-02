@@ -285,8 +285,7 @@ describe('QuadletService#collectPodmanQuadlet', () => {
     expect(WINDOW_MOCK.withProgress).toHaveBeenCalledOnce();
 
     // ensure telemetry is prooperly logged
-    expect(TELEMETRY_LOGGER_MOCK.logUsage).toHaveBeenCalledOnce();
-    expect(TELEMETRY_LOGGER_MOCK.logUsage).toHaveBeenCalledWith(TelemetryEvents.QUADLET_COLLECT, {
+    expect(TELEMETRY_LOGGER_MOCK.logUsage).toHaveBeenCalledExactlyOnceWith(TelemetryEvents.QUADLET_COLLECT, {
       error: ERROR,
     });
   });
@@ -552,29 +551,21 @@ describe('QuadletService#read', () => {
   });
 });
 
-describe('QuadletService#getKubeYAML', () => {
-  let quadlet: QuadletService;
-  beforeEach(async () => {
-    quadlet = getQuadletService();
-    await quadlet.collectPodmanQuadlet();
-  });
+describe('QuadletService#readIntoMachine', () => {
+  test('should use worker.read properly ', async () => {
+    vi.mocked(PODMAN_WORKER_MOCK.read).mockResolvedValue('foo: bar');
 
-  test('should throw an error for unknown id', async () => {
-    await expect(() => {
-      return quadlet.getKubeYAML({
-        id: 'invalid-id',
-        provider: WSL_RUNNING_PROVIDER_CONNECTION_MOCK,
-      });
-    }).rejects.toThrowError('quadlet with id invalid-id not found');
-  });
+    const quadlet = getQuadletService();
 
-  test('quadlet with non-kube type should throw an error', async () => {
-    await expect(() => {
-      return quadlet.getKubeYAML({
-        id: QUADLET_MOCK.id,
-        provider: WSL_RUNNING_PROVIDER_CONNECTION_MOCK,
-      });
-    }).rejects.toThrowError('cannot get kube yaml of non-kube quadlet: quadlet foo-id type is Container');
+    const result = await quadlet.readIntoMachine({
+      path: '/foo/bar.yaml',
+      provider: WSL_RUNNING_PROVIDER_CONNECTION_MOCK,
+    });
+
+    // ensure we get the worker with appropriate connection
+    expect(PODMAN_SERVICE_MOCK.getWorker).toHaveBeenCalledWith(WSL_RUNNING_PROVIDER_CONNECTION_MOCK);
+    // ensure the result match the output of mocked worker#read
+    expect(result).toEqual('foo: bar');
   });
 });
 
@@ -644,8 +635,7 @@ describe('QuadletService#writeIntoMachine', () => {
       files: [],
     });
 
-    expect(SYSTEMD_SERVICE_MOCK.daemonReload).toHaveBeenCalledOnce();
-    expect(SYSTEMD_SERVICE_MOCK.daemonReload).toHaveBeenCalledWith({
+    expect(SYSTEMD_SERVICE_MOCK.daemonReload).toHaveBeenCalledExactlyOnceWith({
       admin: false,
       provider: WSL_RUNNING_PROVIDER_CONNECTION_MOCK,
     });

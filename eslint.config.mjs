@@ -220,7 +220,23 @@ export default [
       'vitest/hoisted-apis-on-top': ['error'],
       'vitest/prefer-mock-promise-shorthand': ['error'],
       'vitest/prefer-each': ['error'],
-      'vitest/no-alias-methods': ['error']
+      'vitest/no-alias-methods': ['error'],
+      'vitest/no-conditional-in-test': ['error'],
+      'vitest/no-identical-title': ['error'],
+      'vitest/prefer-equality-matcher': ['error'],
+      'vitest/prefer-to-contain': ['error'],
+      'vitest/prefer-called-exactly-once-with': ['error'],
+      'vitest/no-duplicate-hooks': ['error'],
+      'vitest/no-conditional-expect': ['error'],
+      'vitest/consistent-each-for': [
+        'error',
+        {
+          test: 'each',
+          describe: 'each',
+        },
+      ],
+      'vitest/prefer-expect-type-of': ['error'],
+      'vitest/prefer-mock-return-shorthand': ['error'],
     },
   },
 

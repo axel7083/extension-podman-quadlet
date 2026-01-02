@@ -31,7 +31,7 @@ import type { ServiceQuadlet } from '/@shared/src/models/service-quadlet';
 import type { TemplateQuadlet } from '/@shared/src/models/template-quadlet';
 
 const QUADLET_SERVICE: QuadletService = {
-  getKubeYAML: vi.fn(),
+  readIntoMachine: vi.fn(),
   getQuadlet: vi.fn(),
   refreshQuadletsStatuses: vi.fn(),
 } as unknown as QuadletService;
@@ -116,18 +116,24 @@ function getQuadletApiImpl(): QuadletApiImpl {
   });
 }
 
-test('QuadletApiImpl#getKubeYAML should propagate result from QuadletService#getKubeYAML', async () => {
-  vi.mocked(QUADLET_SERVICE.getKubeYAML).mockResolvedValue({
-    content: 'dummy-yaml-content',
-    path: 'hello-world',
+describe('QuadletApiImpl#readIntoMachine', () => {
+  test('should use QuadletService#readIntoMachine with correct arguments', async () => {
+    vi.mocked(QUADLET_SERVICE.readIntoMachine).mockResolvedValue('foo: bar');
+
+    const api = getQuadletApiImpl();
+    const result = await api.readIntoMachine({
+      path: '/foo/bar.yaml',
+      connection: WSL_PROVIDER_IDENTIFIER,
+    });
+
+    expect(PROVIDER_SERVICE.getProviderContainerConnection).toHaveBeenCalledWith(WSL_PROVIDER_IDENTIFIER);
+    expect(result).toEqual('foo: bar');
+
+    expect(QUADLET_SERVICE.readIntoMachine).toHaveBeenCalledExactlyOnceWith({
+      path: '/foo/bar.yaml',
+      provider: WSL_PROVIDER_CONNECTION_MOCK,
+    });
   });
-
-  const api = getQuadletApiImpl();
-
-  const { content, path } = await api.getKubeYAML(WSL_PROVIDER_IDENTIFIER, 'dummy-quadlet-id');
-  expect(content).toStrictEqual('dummy-yaml-content');
-  expect(path).toStrictEqual('hello-world');
-  expect(PROVIDER_SERVICE.getProviderContainerConnection).toHaveBeenCalledWith(WSL_PROVIDER_IDENTIFIER);
 });
 
 describe.each(['start', 'stop'] as Array<'start' | 'stop'>)('QuadletApiImpl#%s', func => {
@@ -232,8 +238,7 @@ describe('QuadletApiImpl#createQuadletLogger', () => {
       quadletId: QUADLET_MOCK.id,
     });
 
-    expect(PODMAN_SERVICE.getWorker).toHaveBeenCalledOnce();
-    expect(PODMAN_SERVICE.getWorker).toHaveBeenCalledWith(WSL_PROVIDER_CONNECTION_MOCK);
+    expect(PODMAN_SERVICE.getWorker).toHaveBeenCalledExactlyOnceWith(WSL_PROVIDER_CONNECTION_MOCK);
 
     expect(PODMAN_WORKER_MOCK.journalctlExec).toHaveBeenCalledWith({
       args: ['--user', '--follow', `--unit=${QUADLET_MOCK.service}`, '--output=cat'],

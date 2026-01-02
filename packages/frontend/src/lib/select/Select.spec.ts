@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import '@testing-library/jest-dom/vitest';
-import { beforeEach, vi, test, expect, describe } from 'vitest';
+import { beforeEach, vi, test, expect, assert, describe } from 'vitest';
 import { render, fireEvent, within } from '@testing-library/svelte';
 import Select from '/@/lib/select/Select.svelte';
 
@@ -147,14 +147,12 @@ describe('clear button', () => {
     // get clear HTMLElement
     const clear = container.querySelector('button[class~="clear-select"]');
     // ensure we have two options
-    expect(clear).not.toBeNull();
-    if (!clear) throw new Error('clear is null');
+    assert(clear, 'clear is null');
 
     await fireEvent.click(clear);
 
     await vi.waitFor(() => {
-      expect(onChangeMock).toHaveBeenCalledWith(undefined);
-      expect(onChangeMock).toHaveBeenCalledOnce();
+      expect(onChangeMock).toHaveBeenCalledExactlyOnceWith(undefined);
     });
   });
 
