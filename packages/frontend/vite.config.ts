@@ -17,7 +17,7 @@
  ***********************************************************************/
 import { join } from 'node:path';
 import * as path from 'node:path';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
@@ -39,7 +39,7 @@ export default defineConfig({
   },
   plugins: [
     tailwindcss(),
-    svelte({ hot: !process.env.VITEST }),
+    sveltekit(),
     codecovVitePlugin({
       enableBundleAnalysis: process.env.CODECOV_TOKEN !== undefined,
       bundleName: 'frontend',
@@ -47,25 +47,11 @@ export default defineConfig({
       telemetry: false,
     }),
   ],
-  optimizeDeps: {
-    exclude: [],
-  },
-  base: '',
-  server: {
-    fs: {
-      strict: true,
-    },
-  },
   build: {
     // vite module preload option create dynamically a <link rel="modulepreload" ../>
     // preloading a module do not send referrer header
     // due to limitation with how podman-desktop serve static content, we cannot make request without referrer
     modulePreload: false,
     sourcemap: true,
-    outDir: '../backend/media',
-    assetsDir: '.',
-
-    emptyOutDir: true,
-    reportCompressedSize: false,
   },
 });

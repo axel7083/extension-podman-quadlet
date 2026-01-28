@@ -20,14 +20,13 @@ import '@testing-library/jest-dom/vitest';
 
 import { fireEvent, render, within } from '@testing-library/svelte';
 
-import * as connectionStore from '/@store/connections';
+import * as connectionStore from '/@/stores/connections';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
-import QuadletsList from '/@/pages/QuadletsList.svelte';
+import QuadletsList from '/@/routes/+page.svelte';
 import type { ProviderContainerConnectionDetailedInfo } from '/@shared/src/models/provider-container-connection-detailed-info';
 import { readable } from 'svelte/store';
-import * as quadletStore from '/@store/quadlets';
+import * as quadletStore from '/@/stores/quadlets';
 import { configurationAPI, dialogAPI, quadletAPI } from '/@/api/client';
-import { router } from 'tinro';
 import { QuadletType } from '/@shared/src/utils/quadlet-type';
 import type { QuadletInfo } from '/@shared/src/models/quadlet-info';
 import { isServiceQuadlet } from '/@shared/src/models/service-quadlet';
@@ -38,6 +37,7 @@ import type { QuadletApi } from '/@shared/src/apis/quadlet-api';
 import type { ProviderApi } from '/@shared/src/apis/provide-api';
 import type { ConfigurationApi } from '/@shared/src/apis/configuration-api';
 import { SvelteSelectHelper } from '/@/lib/select/svelte-select-helper.spec';
+import { goto } from '$app/navigation';
 
 // ui object
 const WSL_PROVIDER_DETAILED_INFO: ProviderContainerConnectionDetailedInfo = {
@@ -71,11 +71,10 @@ vi.mock(import('/@/api/client'), () => ({
   } as unknown as DialogApi,
 }));
 // mock stores
-vi.mock(import('/@store/connections'));
-vi.mock(import('/@store/quadlets'));
-vi.mock(import('/@store/synchronisation'));
-// mock utils
-vi.mock(import('tinro'));
+vi.mock(import('/@/stores/connections'));
+vi.mock(import('/@/stores/quadlets'));
+vi.mock(import('/@/stores/synchronisation'));
+vi.mock(import('$app/navigation'));
 // mock components
 vi.mock(import('/@/lib/empty-screen/EmptyQuadletList.svelte'));
 
@@ -165,7 +164,7 @@ test('Generate Quadlet button should redirect to generate form', async () => {
   const generateBtn = getByRole('button', { name: 'Generate Quadlet' });
   await fireEvent.click(generateBtn);
 
-  expect(router.goto).toHaveBeenCalledWith('/quadlets/generate');
+  expect(goto).toHaveBeenCalledWith('/quadlets/generate');
 });
 
 test('Refresh Quadlet button should call ', async () => {

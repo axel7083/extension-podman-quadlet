@@ -23,11 +23,9 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { QuadletType } from '/@shared/src/utils/quadlet-type';
 import type { ProviderContainerConnectionIdentifierInfo } from '/@shared/src/models/provider-container-connection-identifier-info';
 import QuadletName from '/@/lib/table/QuadletName.svelte';
-import { router } from 'tinro';
 import type { QuadletInfo } from '/@shared/src/models/quadlet-info';
 
-// mock utils
-vi.mock(import('tinro'));
+
 
 beforeEach(() => {
   vi.resetAllMocks();

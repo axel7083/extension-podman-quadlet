@@ -2,8 +2,9 @@
 import { type QuadletChildrenFormProps, RESOURCE_ID_QUERY } from '/@/lib/forms/quadlet/quadlet-utils';
 import type { SimpleContainerInfo } from '/@shared/src/models/simple-container-info';
 import { containerAPI } from '/@/api/client';
-import { router } from 'tinro';
 import ContainersSelect from '/@/lib/select/ContainersSelect.svelte';
+import { goto } from '$app/navigation';
+import { page } from '$app/state';
 
 let {
   loading = $bindable(),
@@ -39,14 +40,19 @@ async function listContainers(): Promise<void> {
   }
 }
 
-function onContainerChange(value: SimpleContainerInfo | undefined): void {
+function onContainerChange(value: SimpleContainerInfo | undefined): Promise<void> {
+  const nURL = new URL(page.url);
+
   if (!value) {
-    router.location.query.delete(RESOURCE_ID_QUERY);
-    return;
+    nURL.searchParams.delete(RESOURCE_ID_QUERY);
+  } else {
+    nURL.searchParams.set(RESOURCE_ID_QUERY, value.id);
   }
 
-  router.location.query.set(RESOURCE_ID_QUERY, value.id);
   onChange();
+
+  // eslint-disable-next-line svelte/no-navigation-without-resolve
+  return goto(nURL);
 }
 
 // if we mount the component, and query parameters with all the values defined

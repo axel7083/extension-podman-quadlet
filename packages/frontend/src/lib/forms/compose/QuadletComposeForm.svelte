@@ -8,12 +8,14 @@ import { QuadletType } from '/@shared/src/utils/quadlet-type';
 import type { ProviderContainerConnectionDetailedInfo } from '/@shared/src/models/provider-container-connection-detailed-info';
 import { providerConnectionsInfo } from '/@/stores/connections';
 import ContainerProviderConnectionSelect from '/@/lib/select/ContainerProviderConnectionSelect.svelte';
-import { router } from 'tinro';
 import { faCheck } from '@fortawesome/free-solid-svg-icons/faCheck';
 import { faWarning } from '@fortawesome/free-solid-svg-icons/faWarning';
 import MonacoEditor from '/@/lib/monaco-editor/MonacoEditor.svelte';
 import Fa from 'svelte-fa';
 import QuadletEditor from '/@/lib/monaco-editor/QuadletEditor.svelte';
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+import { page } from '$app/state';
 
 interface Props {
   filepath?: string;
@@ -82,13 +84,19 @@ async function generateYAML(): Promise<void> {
 }
 
 function onContainerProviderConnectionChange(value: ProviderContainerConnectionDetailedInfo | undefined): void {
+  const nURL = new URL(page.url);
+
   if (value) {
-    router.location.query.set('providerId', value.providerId);
-    router.location.query.set('connection', value.name);
+    nURL.searchParams.set('providerId', value.providerId);
+    nURL.searchParams.set('connection', value.name);
   } else {
-    router.location.query.delete('providerId');
-    router.location.query.delete('connection');
+    nURL.searchParams.entries().forEach(([name]) => {
+      nURL.searchParams.delete(name);
+    });
   }
+
+  // eslint-disable-next-line svelte/no-navigation-without-resolve
+  goto(nURL).catch(console.error);
 }
 
 async function saveIntoMachine(): Promise<void> {
@@ -128,8 +136,8 @@ async function saveIntoMachine(): Promise<void> {
   }
 }
 
-function close(): void {
-  router.goto('/');
+function close(): Promise<void> {
+  return goto(resolve('/', {}));
 }
 
 function next(): void {

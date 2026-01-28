@@ -1,11 +1,12 @@
 <script lang="ts">
 import { StatusIcon } from '@podman-desktop/ui-svelte';
 import type { QuadletInfo } from '/@shared/src/models/quadlet-info';
-import { router } from 'tinro';
 import FileLinesIcon from './FileLinesIcon.svelte';
 import FileCodeIcon from './FileCodeIcon.svelte';
 import type { Component } from 'svelte';
 import { isTemplateQuadlet } from '/@shared/src/models/template-quadlet.js';
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
 
 interface Props {
   object: QuadletInfo;
@@ -29,8 +30,12 @@ let status: string = $derived.by(() => {
   }
 });
 
-function openDetails(quadlet: QuadletInfo): void {
-  return router.goto(`/quadlets/${quadlet.connection.providerId}/${quadlet.connection.name}/${quadlet.id}`);
+function openDetails(quadlet: QuadletInfo): Promise<void> {
+  return goto(resolve(`/quadlets/[providerId]/[connection]/[id]`, {
+    providerId: quadlet.connection.providerId,
+    connection: quadlet.connection.name,
+    id: quadlet.id,
+  }));
 }
 </script>
 

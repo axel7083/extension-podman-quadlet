@@ -29,10 +29,6 @@ import { readable } from 'svelte/store';
 import type { ProviderApi } from '/@shared/src/apis/provide-api';
 import type { PodletApi } from '/@shared/src/apis/podlet-api';
 import type { QuadletApi } from '/@shared/src/apis/quadlet-api';
-import { router } from 'tinro';
-
-// mock router lib
-vi.mock(import('tinro'));
 
 // mock clients
 vi.mock(import('/@/api/client'), () => ({

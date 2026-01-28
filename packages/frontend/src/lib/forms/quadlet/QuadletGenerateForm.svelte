@@ -11,7 +11,6 @@ import {
 import { QuadletType, type QuadletTypeGenerate } from '/@shared/src/utils/quadlet-type';
 import type { ProviderContainerConnectionDetailedInfo } from '/@shared/src/models/provider-container-connection-detailed-info';
 import { providerConnectionsInfo } from '/@store/connections';
-import { router } from 'tinro';
 import RadioButtons from '/@/lib/buttons/RadioButtons.svelte';
 import { podletAPI, quadletAPI } from '/@/api/client';
 import { faCode } from '@fortawesome/free-solid-svg-icons/faCode';
@@ -21,10 +20,12 @@ import { faCheck } from '@fortawesome/free-solid-svg-icons/faCheck';
 import QuadletEditor from '/@/lib/monaco-editor/QuadletEditor.svelte';
 import Fa from 'svelte-fa';
 import { faWarning } from '@fortawesome/free-solid-svg-icons/faWarning';
+import { goto } from '$app/navigation';
+import { page } from '$app/state';
 
 interface Props extends QuadletGenerateFormProps {
   loading: boolean;
-  close: () => void;
+  close: () => Promise<void>;
 }
 
 let {
@@ -50,25 +51,39 @@ $effect(() => {
   }
 });
 
-function onQuadletTypeChange(value: string): void {
-  router.location.query.set('quadletType', value);
-  router.location.query.delete(RESOURCE_ID_QUERY); // delete the key
+function onQuadletTypeChange(value: string): Promise<void> {
   // reset
   error = undefined;
   quadlet = undefined;
+
+  const nURL = new URL(page.url);
+
+  nURL.searchParams.set('quadletType', value);
+  nURL.searchParams.delete(RESOURCE_ID_QUERY);// delete the key
+
+  // eslint-disable-next-line svelte/no-navigation-without-resolve
+  return goto(nURL);
 }
 
 function onContainerProviderConnectionChange(value: ProviderContainerConnectionDetailedInfo | undefined): void {
-  if (value) {
-    router.location.query.set('providerId', value.providerId);
-    router.location.query.set('connection', value.name);
-    router.location.query.delete(RESOURCE_ID_QUERY); // delete the key
-  } else {
-    router.location.query.clear();
-  }
   // reset
   error = undefined;
   quadlet = undefined;
+
+  const nURL = new URL(page.url);
+
+  if (value) {
+    nURL.searchParams.set('providerId', value.providerId);
+    nURL.searchParams.set('connection', value.name);
+    nURL.searchParams.delete(RESOURCE_ID_QUERY); // delete the key
+  } else {
+    nURL.searchParams.entries().forEach(([name]) => {
+      nURL.searchParams.delete(name);
+    });
+  }
+
+  // eslint-disable-next-line svelte/no-navigation-without-resolve
+  goto(nURL).catch(console.error);
 }
 
 // reset quadlet if any got cleared

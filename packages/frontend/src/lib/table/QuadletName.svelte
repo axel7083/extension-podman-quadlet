@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { QuadletInfo } from '/@shared/src/models/quadlet-info';
-import { router } from 'tinro';
-import { isServiceQuadlet } from '/@shared/src/models/service-quadlet.js';
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';import { isServiceQuadlet } from '/@shared/src/models/service-quadlet.js';
 
 interface Props {
   object: QuadletInfo;
@@ -11,8 +11,12 @@ let { object }: Props = $props();
 
 let name = $derived(isServiceQuadlet(object) ? object.service : object.path);
 
-function openDetails(quadlet: QuadletInfo): void {
-  return router.goto(`/quadlets/${quadlet.connection.providerId}/${quadlet.connection.name}/${quadlet.id}`);
+function openDetails(quadlet: QuadletInfo): Promise<void> {
+  return goto(resolve(`/quadlets/[providerId]/[connection]/[id]`, {
+    providerId: quadlet.connection.providerId,
+    connection: quadlet.connection.name,
+    id: quadlet.id,
+  }));
 }
 </script>
 
