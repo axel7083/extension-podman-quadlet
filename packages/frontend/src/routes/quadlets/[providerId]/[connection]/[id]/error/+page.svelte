@@ -1,6 +1,6 @@
 <script lang="ts">
 import XTerminal from '/@/lib/terminal/XTerminal.svelte';
-import { isServiceLessQuadlet } from '/@shared/src/models/service-less-quadlet';
+import { isServiceLessQuadlet } from '@quadlet/core-api';
 import type { PageProps } from './$types';
 import { readable } from 'svelte/store';
 

@@ -16,7 +16,4 @@ let loading = $state(false);
   {/if}
 </div>
 
-<FileEditor
-  connection={data.quadlet.connection}
-  bind:loading={loading}
-  path={decodeURIComponent(params.fileId)} />
+<FileEditor connection={data.quadlet.connection} bind:loading={loading} path={decodeURIComponent(params.fileId)} />

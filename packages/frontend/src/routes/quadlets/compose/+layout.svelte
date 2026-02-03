@@ -1,16 +1,16 @@
 <script lang="ts">
-  import type { LayoutProps } from './$types';
-  import { goto } from '$app/navigation';
-  import { resolve } from '$app/paths';
-  import { faCode } from '@fortawesome/free-solid-svg-icons/faCode';
-  import Fa from 'svelte-fa';
-  import { FormPage } from '@podman-desktop/ui-svelte';
+import type { LayoutProps } from './$types';
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+import { faCode } from '@fortawesome/free-solid-svg-icons/faCode';
+import Fa from 'svelte-fa';
+import { FormPage } from '@podman-desktop/ui-svelte';
 
-  let { children }: LayoutProps = $props();
+let { children }: LayoutProps = $props();
 
-  function close(): Promise<void> {
-    return goto(resolve('/', {}));
-  }
+function close(): Promise<void> {
+  return goto(resolve('/'));
+}
 </script>
 
 <FormPage

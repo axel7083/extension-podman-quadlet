@@ -8,6 +8,10 @@ const config = {
       assets: '../backend/media',
       strict: false,
     }),
+    alias: {
+      '/@/*': './src/*',
+      '/@store/*': './src/stores/*',
+    },
     prerender: {
       handleUnseenRoutes: 'ignore',
     },
@@ -16,6 +20,12 @@ const config = {
     },
     output: {
       bundleStrategy: 'inline',
+    },
+    typescript: {
+      config: tsconfig => {
+        tsconfig['include'] = [...tsconfig['include'], '../../../types/**/*.d.ts', '../vite.tests.setup.ts'];
+        return tsconfig;
+      },
     },
   },
 };

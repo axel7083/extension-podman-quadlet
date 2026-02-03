@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { PageProps } from './$types';
+import type { PageProps } from './$types';
 import ProgressBar from '/@/lib/progress/ProgressBar.svelte';
 import QuadletComposeForm from '/@/lib/forms/compose/QuadletComposeForm.svelte';
 
-  // We get the query parameters from the parent
-  let { data }: PageProps = $props();
+// We get the query parameters from the parent
+let { data }: PageProps = $props();
 
 let loading: boolean = $state(false);
 </script>

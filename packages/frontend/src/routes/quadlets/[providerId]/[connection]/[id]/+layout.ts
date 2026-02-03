@@ -18,7 +18,7 @@
 import type { LayoutLoad } from './$types';
 import { quadletsInfo } from '/@/stores/quadlets';
 import { get } from 'svelte/store';
-import type { QuadletInfo } from '/@shared/src/models/quadlet-info';
+import type { QuadletInfo } from '@quadlet/core-api';
 import { error } from '@sveltejs/kit';
 
 export const load: LayoutLoad = async ({ params }): Promise<{ quadlet: QuadletInfo }> => {
@@ -29,7 +29,7 @@ export const load: LayoutLoad = async ({ params }): Promise<{ quadlet: QuadletIn
       quadlet.connection.providerId === params.providerId,
   );
 
-  if(!quadlet) {
+  if (!quadlet) {
     error(404, `quadlet not found`);
   }
 

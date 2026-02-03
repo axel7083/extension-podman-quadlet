@@ -11,7 +11,7 @@ let { data }: PageProps = $props();
 let loading: boolean = $state(false);
 
 function close(): Promise<void> {
-  return goto(resolve('/', {}));
+  return goto(resolve('/'));
 }
 </script>
 

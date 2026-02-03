@@ -1,16 +1,18 @@
 <script lang="ts">
 import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import Fa from 'svelte-fa';
+import type { ResolvedPathname } from '$app/types';
 
 interface Props {
   selected: boolean;
-  url: string;
+  url: ResolvedPathname;
   title: string;
   icon: IconDefinition;
 }
 let { selected, url, title, icon }: Props = $props();
 </script>
 
+<!-- eslint-disable svelte/no-navigation-without-resolve -->
 <div
   class="pb-1 border-b-[3px] whitespace-nowrap hover:cursor-pointer focus:outline-[var(--pd-tab-highlight)]"
   class:border-[var(--pd-tab-highlight)]={selected}

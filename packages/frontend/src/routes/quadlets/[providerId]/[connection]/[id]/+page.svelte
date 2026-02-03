@@ -37,7 +37,7 @@ onMount(async () => {
 });
 
 async function save(): Promise<void> {
-  if(!quadletSource) return;
+  if (!quadletSource) return;
 
   loading = true;
   try {
@@ -73,10 +73,9 @@ function onchange(content: string): void {
 </div>
 
 <div class="flex py-2 h-[40px]">
-            <span
-              class="block w-auto text-sm font-medium whitespace-nowrap leading-6 text-[var(--pd-content-text)] pl-2 pr-2">
-              {data.quadlet.path}
-            </span>
+  <span class="block w-auto text-sm font-medium whitespace-nowrap leading-6 text-[var(--pd-content-text)] pl-2 pr-2">
+    {data.quadlet.path}
+  </span>
   {#if quadletSourceError}
     <ErrorMessage error={quadletSourceError} />
   {/if}

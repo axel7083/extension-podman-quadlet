@@ -8,8 +8,8 @@ import {
   type QuadletGenerateFormProps,
   RESOURCE_ID_QUERY,
 } from '/@/lib/forms/quadlet/quadlet-utils';
-import { QuadletType, type QuadletTypeGenerate } from '/@shared/src/utils/quadlet-type';
-import type { ProviderContainerConnectionDetailedInfo } from '/@shared/src/models/provider-container-connection-detailed-info';
+import type { ProviderContainerConnectionDetailedInfo, QuadletTypeGenerate } from '@quadlet/core-api';
+import { QuadletType } from '@quadlet/core-api';
 import { providerConnectionsInfo } from '/@store/connections';
 import RadioButtons from '/@/lib/buttons/RadioButtons.svelte';
 import { podletAPI, quadletAPI } from '/@/api/client';
@@ -59,7 +59,7 @@ function onQuadletTypeChange(value: string): Promise<void> {
   const nURL = new URL(page.url);
 
   nURL.searchParams.set('quadletType', value);
-  nURL.searchParams.delete(RESOURCE_ID_QUERY);// delete the key
+  nURL.searchParams.delete(RESOURCE_ID_QUERY); // delete the key
 
   // eslint-disable-next-line svelte/no-navigation-without-resolve
   return goto(nURL);

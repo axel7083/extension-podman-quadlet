@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 import { join } from 'node:path';
-import { builtinModules } from 'node:module';
 import dts from 'vite-plugin-dts';
 import { defineConfig } from 'vite';
 import { codecovVitePlugin } from '@codecov/vite-plugin';
@@ -52,7 +51,7 @@ export default defineConfig({
       formats: ['cjs'],
     },
     rollupOptions: {
-      external: ['@podman-desktop/api', ...builtinModules.flatMap(p => [p, `node:${p}`])],
+      external: ['@podman-desktop/api'],
       output: {
         entryFileNames: '[name].cjs',
       },

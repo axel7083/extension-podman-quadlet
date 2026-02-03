@@ -23,17 +23,14 @@ import { expect, test, describe, vi, beforeEach } from 'vitest';
 import QuadletGenerateForm from '/@/lib/forms/quadlet/QuadletGenerateForm.svelte';
 import * as connectionStore from '/@store/connections';
 import { readable } from 'svelte/store';
-import type { ProviderContainerConnectionDetailedInfo } from '/@shared/src/models/provider-container-connection-detailed-info';
+import type { ProviderContainerConnectionDetailedInfo, ContainerApi, ProviderApi, PodletApi } from '@quadlet/core-api';
 import { containerAPI, podletAPI } from '/@/api/client';
-import { QuadletType } from '/@shared/src/utils/quadlet-type';
+import { QuadletType } from '@quadlet/core-api';
 import type { Component, ComponentProps } from 'svelte';
-import type { ContainerApi } from '/@shared/src/apis/container-api';
-import type { ProviderApi } from '/@shared/src/apis/provide-api';
-import type { PodletApi } from '/@shared/src/apis/podlet-api';
-import { router } from 'tinro';
+import { goto } from '$app/navigation';
 
 // mock router lib
-vi.mock(import('tinro'));
+vi.mock(import('$app/navigation'));
 
 // mock clients
 vi.mock(import('/@/api/client'), () => ({
@@ -68,6 +65,8 @@ beforeEach(() => {
   vi.mocked(connectionStore).providerConnectionsInfo = readable([WSL_PROVIDER_DETAILED_INFO]);
   vi.mocked(containerAPI.all).mockResolvedValue([]);
   vi.mocked(podletAPI.generate).mockResolvedValue(PODLET_GENERATE_RUN_RESULT);
+
+  vi.mocked(goto).mockResolvedValue(undefined);
 });
 
 describe('Step options', () => {
@@ -79,8 +78,12 @@ describe('Step options', () => {
       close: vi.fn(),
     });
 
-    expect(router.location.query.set).toHaveBeenCalledWith('providerId', WSL_PROVIDER_DETAILED_INFO.providerId);
-    expect(router.location.query.set).toHaveBeenCalledWith('connection', WSL_PROVIDER_DETAILED_INFO.name);
+    expect(goto).toHaveBeenCalledOnce();
+    const url = vi.mocked(goto).mock.calls[0][0];
+    const parsed = new URL(url);
+
+    expect(parsed.searchParams.get('providerId')).toEqual(WSL_PROVIDER_DETAILED_INFO.providerId);
+    expect(parsed.searchParams.get('connection')).toEqual(WSL_PROVIDER_DETAILED_INFO.name);
   });
 
   test('expect cancel to call close', async () => {

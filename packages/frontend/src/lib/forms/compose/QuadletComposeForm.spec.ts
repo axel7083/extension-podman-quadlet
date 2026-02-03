@@ -23,12 +23,13 @@ import { expect, test, describe, vi, beforeEach } from 'vitest';
 import QuadletComposeForm from '/@/lib/forms/compose/QuadletComposeForm.svelte';
 import type { Component, ComponentProps } from 'svelte';
 import { podletAPI, quadletAPI } from '/@/api/client';
-import type { ProviderContainerConnectionDetailedInfo } from '/@shared/src/models/provider-container-connection-detailed-info';
+import type { ProviderContainerConnectionDetailedInfo, ProviderApi, PodletApi, QuadletApi } from '@quadlet/core-api';
 import * as connectionStore from '/@store/connections';
 import { readable } from 'svelte/store';
-import type { ProviderApi } from '/@shared/src/apis/provide-api';
-import type { PodletApi } from '/@shared/src/apis/podlet-api';
-import type { QuadletApi } from '/@shared/src/apis/quadlet-api';
+import { goto } from '$app/navigation';
+
+// mock router
+vi.mock(import('$app/navigation'));
 
 // mock clients
 vi.mock(import('/@/api/client'), () => ({
@@ -64,6 +65,8 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(connectionStore).providerConnectionsInfo = readable([WSL_PROVIDER_DETAILED_INFO]);
   vi.mocked(podletAPI.compose).mockResolvedValue(COMPOSE_OUTPUT_MOCK);
+
+  vi.mocked(goto).mockResolvedValue(undefined);
 });
 
 describe('step select', () => {
@@ -74,8 +77,11 @@ describe('step select', () => {
       loading: false,
     });
 
-    expect(router.location.query.set).toHaveBeenCalledWith('providerId', WSL_PROVIDER_DETAILED_INFO.providerId);
-    expect(router.location.query.set).toHaveBeenCalledWith('connection', WSL_PROVIDER_DETAILED_INFO.name);
+    expect(goto).toHaveBeenCalledOnce();
+    const url = vi.mocked(goto).mock.calls[0][0];
+    const parsed = new URL(url);
+    expect(parsed.searchParams.get('providerId')).toEqual(WSL_PROVIDER_DETAILED_INFO.providerId);
+    expect(parsed.searchParams.get('connection')).toEqual(WSL_PROVIDER_DETAILED_INFO.name);
   });
 
   test('file provided as parameter should be displayed', async () => {

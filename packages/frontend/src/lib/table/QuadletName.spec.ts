@@ -20,12 +20,12 @@ import '@testing-library/jest-dom/vitest';
 
 import { fireEvent, render } from '@testing-library/svelte';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { QuadletType } from '/@shared/src/utils/quadlet-type';
-import type { ProviderContainerConnectionIdentifierInfo } from '/@shared/src/models/provider-container-connection-identifier-info';
+import { QuadletType } from '@quadlet/core-api';
+import type { ProviderContainerConnectionIdentifierInfo, QuadletInfo } from '@quadlet/core-api';
 import QuadletName from '/@/lib/table/QuadletName.svelte';
-import type { QuadletInfo } from '/@shared/src/models/quadlet-info';
+import { goto } from '$app/navigation';
 
-
+vi.mock(import('$app/navigation'));
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -80,8 +80,6 @@ test('clicking on quadlet name should redirect to details page', async () => {
   await fireEvent.click(btn);
 
   await vi.waitFor(() => {
-    expect(router.goto).toHaveBeenCalledWith(
-      `/quadlets/${PROVIDER_MOCK.providerId}/${PROVIDER_MOCK.name}/${QUADLET_MOCK.id}`,
-    );
+    expect(goto).toHaveBeenCalledWith(`/quadlets/${PROVIDER_MOCK.providerId}/${PROVIDER_MOCK.name}/${QUADLET_MOCK.id}`);
   });
 });

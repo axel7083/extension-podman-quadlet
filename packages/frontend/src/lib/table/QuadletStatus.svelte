@@ -1,10 +1,10 @@
 <script lang="ts">
 import { StatusIcon } from '@podman-desktop/ui-svelte';
-import type { QuadletInfo } from '/@shared/src/models/quadlet-info';
+import type { QuadletInfo } from '@quadlet/core-api';
 import FileLinesIcon from './FileLinesIcon.svelte';
 import FileCodeIcon from './FileCodeIcon.svelte';
 import type { Component } from 'svelte';
-import { isTemplateQuadlet } from '/@shared/src/models/template-quadlet.js';
+import { isTemplateQuadlet } from '@quadlet/core-api';
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
@@ -31,11 +31,13 @@ let status: string = $derived.by(() => {
 });
 
 function openDetails(quadlet: QuadletInfo): Promise<void> {
-  return goto(resolve(`/quadlets/[providerId]/[connection]/[id]`, {
-    providerId: quadlet.connection.providerId,
-    connection: quadlet.connection.name,
-    id: quadlet.id,
-  }));
+  return goto(
+    resolve(`/quadlets/[providerId]/[connection]/[id]`, {
+      providerId: quadlet.connection.providerId,
+      connection: quadlet.connection.name,
+      id: quadlet.id,
+    }),
+  );
 }
 </script>
 
