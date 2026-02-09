@@ -55,15 +55,12 @@ export abstract class PodmanHelper {
 
   /**
    * Get podman connections
-   * @remarks only ssh protocol is supported
    */
   public async getPodmanConnections(): Promise<Array<PodmanConnection>> {
     const { stdout } = await this.podman.exec(['system', 'connection', 'ls', '--format=json']);
     const connections: Array<PodmanConnection> = JSON.parse(stdout);
     // validate output
     if (!Array.isArray(connections)) throw new Error('malformed output for podman system connection ls command.');
-
-    // filter out all machines (that are local)
-    return connections.filter(connection => connection.URI.startsWith('ssh:'));
+    return connections;
   }
 }

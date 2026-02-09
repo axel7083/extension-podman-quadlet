@@ -116,6 +116,7 @@ export class PodmanService extends PodmanHelper implements Disposable, AsyncInit
     }
 
     const url = new URL(URI);
+    if(url.protocol !== 'ssh:') throw new Error(`cannot connect to ${connection.connection.name}: expect 'ssh:' protocol received '${url.protocol}'`);
     if (!url) throw new Error('cannot parse URI from podman connection: null URI');
     if (!Identity) throw new Error('remote connection without identity specified is not supported');
 
