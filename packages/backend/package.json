@@ -54,6 +54,12 @@
           "title": "Generate Quadlet"
         }
       ],
+      "dashboard/image": [
+        {
+          "command": "podlet.generate.image",
+          "title": "Generate Quadlet"
+        }
+      ],
       "dashboard/compose": [
         {
           "command": "podlet.compose",
@@ -64,7 +70,11 @@
     "commands": [
       {
         "command": "podlet.generate.container",
-        "title": "Podlet: generate"
+        "title": "Podlet: generate container quadlet"
+      },
+      {
+        "command": "podlet.generate.image",
+        "title": "Podlet: generate image quadlet"
       },
       {
         "command": "podlet.compose",

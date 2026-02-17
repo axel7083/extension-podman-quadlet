@@ -34,13 +34,14 @@ import type { BigIntStats, Stats } from 'node:fs';
 import { join } from 'node:path';
 import type { ContainerInfoUI } from '../models/container-info-ui';
 import type { ProviderContainerConnectionDetailedInfo } from '@podman-desktop/quadlet-extension-core-api';
+import { QuadletType } from '@podman-desktop/quadlet-extension-core-api';
 
 const COMMAND_API_MOCK: typeof commandsApi = {
   registerCommand: vi.fn(),
 } as unknown as typeof commandsApi;
 const ROUTING_MOCK: RoutingService = {
   openQuadletCompose: vi.fn(),
-  openQuadletCreateContainer: vi.fn(),
+  openQuadletGenerate: vi.fn(),
 } as unknown as RoutingService;
 const CONTAINER_SERVICE_MOCK: ContainerService = {
   getRunningProviderContainerConnectionByEngineId: vi.fn(),
@@ -113,7 +114,7 @@ test('disposing the command service should dispose resources', async () => {
 
   commands.dispose();
   // we have two commands registered
-  expect(DISPOSABLE_MOCK.dispose).toHaveBeenCalledTimes(2);
+  expect(DISPOSABLE_MOCK.dispose).toHaveBeenCalledTimes(3);
 });
 
 describe(`${PODLET_COMPOSE_CMD} command`, () => {
@@ -203,5 +204,9 @@ test(`${PODLET_GENERATE_CONTAINER_CMD} command`, async () => {
   );
   expect(PROVIDER_SERVICE_MOCK.toProviderContainerConnectionDetailedInfo).toHaveBeenCalledWith(PROVIDER_MOCK);
 
-  expect(ROUTING_MOCK.openQuadletCreateContainer).toHaveBeenCalledWith(PROVIDER_INFO_MOCK, 'container-id');
+  expect(ROUTING_MOCK.openQuadletGenerate).toHaveBeenCalledWith(
+    PROVIDER_INFO_MOCK,
+    QuadletType.CONTAINER,
+    'container-id',
+  );
 });
