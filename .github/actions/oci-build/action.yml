@@ -22,6 +22,10 @@ inputs:
   ref:
     required: false
     description: 'The branch, tag or SHA to checkout.'
+  image-name:
+    required: false
+    description: 'The name of the image to publish'
+    default: ${{ github.repository }}
 
 outputs:
   artifact-id:
@@ -38,6 +42,7 @@ runs:
     - name: Build Image
       uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 #v2.13
       with:
+        image: ${{ inputs.image-name }}
         containerfiles: Containerfile
         context: .
         extra-args: |
