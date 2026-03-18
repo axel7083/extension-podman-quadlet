@@ -29,9 +29,10 @@ permissions:
   attestations: write
   actions: read
   packages: write
+  checks: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.workflow_run.pull_requests[0].number }}
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.id }}
   cancel-in-progress: true
 
 jobs:
