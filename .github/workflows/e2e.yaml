@@ -18,10 +18,15 @@
 name: e2e
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
+  workflow_call:
+    inputs:
+      artifact-id:
+        required: true
+        description: 'The id of the artifact to publish'
+        type: string
+    secrets:
+      github-token:
+        required: true
 
 permissions:
   contents: read
@@ -31,21 +36,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Dedicated step to build the quadlet extension image
-  build-container:
-    name: Build Extension Image
+  extract-container:
+    name: extract oci image
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Build Image and Extract Files
-        id: build-image
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ inputs.artifact-id }}
+          github-token: ${{ secrets.github-token }}
+          path: .
+
+      - name: Extract Files
+        id: extract-image
         run: |
-          podman build -t local_image ./
-          CONTAINER_ID=$(podman create localhost/local_image --entrypoint "")
-          mkdir -p output/plugins
-          podman export $CONTAINER_ID | tar -x -C output/plugins/
-          podman rm -f $CONTAINER_ID
-          podman rmi -f localhost/local_image:latest
+          tar -xf oci-image.tar -C output/plugins/
+
       - name: Upload Quadlet Image Artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
@@ -55,7 +60,7 @@ jobs:
   e2e:
     name: e2e tests smoke / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    needs: build-container
+    needs: extract-container
     strategy:
       fail-fast: true
       matrix:

@@ -58,25 +58,6 @@ jobs:
       - name: Run svelte check
         run: pnpm svelte:check
 
-  oci-build:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
-      - name: Build Image
-        id: build-image
-        uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 #v2.13
-        with:
-          image: ${{ github.repository }}
-          containerfiles: Containerfile
-          context: .
-          extra-args: |
-            --squash
-            --output type=tar,dest=oci-image.tar
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-        with:
-          name: oci-image
-          path: oci-image.tar
-
   unit-tests:
     name: unit tests / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -106,3 +87,16 @@ jobs:
 
       - name: Run unit tests
         run: pnpm test:unit
+
+  oci-build:
+    runs-on: ubuntu-24.04
+    outputs:
+      artifact-id: ${{ steps.build.outputs.artifact-id }}
+    steps:
+      - uses: ./.github/actions/oci-build/action.yml
+
+  e2e:
+    needs: oci-build
+    uses: ./.github/workflows/e2e.yaml
+    with:
+      artifact-id: ${{ needs.oci-build.outputs.artifact-id }}
