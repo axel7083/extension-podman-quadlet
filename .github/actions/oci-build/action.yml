@@ -31,6 +31,9 @@ outputs:
   artifact-id:
     value: ${{ steps.upload-oci-image.outputs.artifact-id }}
     description: 'A unique identifier for the artifact that was just uploaded. '
+  artifact-name:
+    value: 'artifact'
+    description: 'The name of the artifact that was just uploaded. '
 
 runs:
   using: "composite"
@@ -52,4 +55,5 @@ runs:
     - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       id: upload-oci-image
       with:
+        name: 'artifact'
         path: oci-image.tar

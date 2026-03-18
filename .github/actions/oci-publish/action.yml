@@ -19,13 +19,18 @@ name: 'oci-publish'
 description: 'Publish an extension OCI image'
 
 inputs:
+  run-id:
+    required: false
+    description: 'The id of the workflow run where the desired download artifact was uploaded from.'
+
   artifact-id:
     required: false
     description: 'The id of the artifact to publish'
 
-  run-id:
+  artifact-name:
     required: false
-    description: 'The id of the workflow run where the desired download artifact was uploaded from.'
+    default: 'artifact'
+    description: 'The id of the artifact to publish'
 
   github-token:
     required: false
@@ -56,9 +61,10 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with:
         artifact-ids: ${{ inputs.artifact-id }}
+        run-id: ${{ inputs.run-id }}
         name: ${{ inputs.artifact-name }}
         github-token: ${{ inputs.github-token }}
         path: .

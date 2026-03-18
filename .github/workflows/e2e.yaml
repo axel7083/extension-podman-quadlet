@@ -20,8 +20,19 @@ name: e2e
 on:
   workflow_call:
     inputs:
+      run-id:
+        required: false
+        description: 'The id of the workflow run where the desired download artifact was uploaded from.'
+        type: string
+
       artifact-id:
         required: true
+        description: 'The id of the artifact to publish'
+        type: string
+
+      artifact-name:
+        required: false
+        default: 'artifact'
         description: 'The id of the artifact to publish'
         type: string
     secrets:
@@ -40,9 +51,11 @@ jobs:
     name: extract oci image
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
+          name: ${{ inputs.artifact-name }}
           artifact-ids: ${{ inputs.artifact-id }}
+          run-id: ${{ inputs.run-id }}
           github-token: ${{ secrets.github-token }}
           path: .
 
