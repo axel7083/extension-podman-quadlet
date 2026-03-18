@@ -62,6 +62,7 @@ jobs:
       - name: Extract Files
         id: extract-image
         run: |
+          tree
           tar -xf oci-image.tar -C output/plugins/
 
       - name: Upload Quadlet Image Artifact
