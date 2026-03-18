@@ -2,6 +2,7 @@
 
 [![codecov](https://codecov.io/github/podman-desktop/extension-podman-quadlet/graph/badge.svg?token=P885ZCDJA7)](https://codecov.io/github/podman-desktop/extension-podman-quadlet)
 ![GitHub Repo stars](https://img.shields.io/github/stars/podman-desktop/extension-podman-quadlet?link=https%3A%2F%2Fgithub.com%2Fpodman-desktop%2Fextension-podman-quadlet)
+Demo
 
 ## Overview
 
