@@ -31,7 +31,7 @@ jobs:
     outputs:
       artifact-id: ${{ steps.build.outputs.artifact-id }}
     steps:
-      - uses: ./.github/actions/oci-build/action.yml
+      - uses: ./.github/actions/oci-build
 
   e2e:
     needs: oci-build
