@@ -65,7 +65,7 @@ jobs:
         id: push-to-registry
         uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c #v2.8
         with:
-          tags ${{ env.IMAGE_NAME }}
+          tags: ${{ env.IMAGE_NAME }}
 
       - name: Generate artifact attestation
         uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 #v4.1.0
