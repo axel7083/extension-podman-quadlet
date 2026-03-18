@@ -62,13 +62,14 @@ jobs:
       - name: Extract Files
         id: extract-image
         run: |
-          tar -xf oci-image.tar
+          mkdir ./extracted
+          tar -xf oci-image.tar -C ./extracted
 
       - name: Upload Quadlet Image Artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: quadlet-plugin
-          path: .
+          path: ./extracted
 
   e2e:
     name: e2e tests smoke / ${{ matrix.os }}
