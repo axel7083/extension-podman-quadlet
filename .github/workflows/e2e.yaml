@@ -27,13 +27,12 @@ on:
         default: '${{ github.run_id }}'
 
       artifact-id:
-        required: true
+        required: false
         description: 'The id of the artifact to publish'
         type: string
 
       artifact-name:
         required: false
-        default: 'artifact'
         description: 'The id of the artifact to publish'
         type: string
     secrets:
@@ -54,9 +53,9 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
+          run-id: ${{ inputs.run-id }}
           name: ${{ inputs.artifact-name }}
           artifact-ids: ${{ inputs.artifact-id }}
-          run-id: ${{ inputs.run-id }}
           github-token: ${{ secrets.github-token }}
           path: .
 
