@@ -47,6 +47,13 @@ jobs:
           github-token: ${{ github.token }}
           path: .
 
+      - name: Log in to ${{ inputs.registry }}
+        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 #v1.7
+        with:
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+
       - name: Import image
         shell: bash
         run: podman import oci-image.tar ${{ github.repository }}/pr:${{ github.event.workflow_run.head_sha }}
@@ -66,3 +73,27 @@ jobs:
           subject-name: ghcr.io/${{ github.repository }}/pr
           subject-digest: ${{ steps.push-to-registry.outputs.digest }}
           push-to-registry: true
+
+      - name: Publish check run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          IMAGE: ${{ needs.build-publish.outputs.image-with-tag }}
+        run: |
+          ruby <<'EOF' | gh api repos/${{ github.repository }}/check-runs -X POST --input -
+          require "json"
+
+          report = {
+            name: "OCI Preview Image",
+            head_sha: ENV["HEAD_SHA"],
+            status: "completed",
+            conclusion: "success",
+            output: {
+              title: "Preview Image",
+              summary: "OCI preview image built successfully.",
+              text: "```\n#{ENV["IMAGE"]}\n```"
+            }
+          }
+
+          puts JSON.generate(report)
+          EOF
