@@ -40,6 +40,6 @@ jobs:
     needs: oci-build
     uses: ./.github/workflows/e2e.yaml
     with:
-      artifact-id: ${{ needs.oci-build.outputs.artifact-id }}
+      artifact-name: ${{ needs.oci-build.outputs.artifact-name }}
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
