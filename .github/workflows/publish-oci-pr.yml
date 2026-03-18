@@ -48,7 +48,7 @@ jobs:
 
       - name: Import image
         shell: bash
-        run: podman import oci-image.tar
+        run: podman import oci-image.tar ${{ github.repository }}/pr:${{ github.event.workflow_run.head_sha }}
 
       - name: Push Image
         if: ${{ github.event.workflow_run.pull_requests[0] != null }}
@@ -56,7 +56,7 @@ jobs:
         uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c #v2.8
         with:
           image: ${{ github.repository }}/pr
-          tags: ${{ github.event.workflow_run.pull_requests[0].number }} ${{ github.event.workflow_run.head_sha }}
+          tags: ${{ github.event.workflow_run.head_sha }}
           registry: ghcr.io
 
       - name: Generate artifact attestation
