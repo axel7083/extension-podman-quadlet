@@ -31,6 +31,13 @@ jobs:
   publish:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     uses: axel7083/gh-extensions-actions/.github/workflows/publish-oci-pr.yml@feature/publish-oci-pr
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      actions: read
+      packages: write
+      checks: write
     with:
       run-id: ${{ github.event.workflow_run.id }}
       head-sha: ${{ github.event.workflow_run.head_sha }}
