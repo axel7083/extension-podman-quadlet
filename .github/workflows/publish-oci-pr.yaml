@@ -26,11 +26,6 @@ on:
 
 permissions:
   contents: read
-  actions: read
-  id-token: write
-  attestations: write
-  packages: write
-  checks: write
 
 jobs:
   publish:
