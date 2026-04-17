@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2024-2025 Red Hat, Inc.
+# Copyright (C) 2024-2026 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -87,3 +87,15 @@ jobs:
 
       - name: Run unit tests
         run: pnpm test:unit
+
+  build-oci:
+    name: Build OCI Image
+    runs-on: ubuntu-24.04
+    outputs:
+      artifact-id: ${{ steps.build.outputs.artifact-id }}
+    steps:
+      - name: Build OCI
+        id: build
+        uses: axel7083/gh-extensions-actions/.github/actions/oci-build@feature/publish-oci-pr
+        with:
+          ref: ${{ github.ref }}
