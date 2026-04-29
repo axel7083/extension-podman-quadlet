@@ -68,7 +68,21 @@ export class QuadletService extends QuadletHelper implements Disposable, AsyncIn
     }, [] as QuadletInfo[]);
   }
 
-  async init(): Promise<void> {}
+  async init(): Promise<void> {
+    this.#extensionsEventDisposable = this.dependencies.providers.event(connections => {
+      // iterate over existing quadlets symbols
+      for (const symbol of Array.from(this.#value.keys())) {
+        const { providerId, name } = this.fromSymbol(symbol);
+        // if no longer in the list, we remove it
+        if (connections.find(connection => connection.providerId === providerId && connection.name === name && connection.status === 'started') === undefined) {
+          console.log(`[QuadletService] provider ${providerId}:${name} is no longer started, removing its quadlets`);
+          this.#value.delete(symbol);
+          this.#synchronisation.delete(symbol);
+        }
+      }
+      this.notify();
+    });
+  }
 
   protected findQuadlet(options: { provider: ProviderContainerConnection; id: string }): Quadlet | undefined {
     // get the corresponding symbol

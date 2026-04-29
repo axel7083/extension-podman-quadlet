@@ -59,11 +59,23 @@ const WSL_RUNNING_PROVIDER_CONNECTION_MOCK: ProviderContainerConnection = {
   providerId: 'podman',
 } as ProviderContainerConnection;
 
+const WSL_STOPPED_PROVIDER_CONNECTION_MOCK: ProviderContainerConnection = {
+  connection: {
+    type: 'podman',
+    name: 'podman-machine-stopped',
+    vmType: 'WSL',
+    status: () => 'stopped',
+  },
+  providerId: 'podman',
+} as ProviderContainerConnection;
+
 // Mock for dependencies injection (constructor)
 const PROVIDER_SERVICE_MOCK: ProviderService = {
   getContainerConnections: vi.fn(),
   getProviderContainerConnection: vi.fn(),
   toProviderContainerConnectionDetailedInfo: vi.fn(),
+  // Add an event emitter mock
+  event: vi.fn(),
 } as unknown as ProviderService;
 
 const PODMAN_SERVICE_MOCK: PodmanService = {
@@ -434,7 +446,7 @@ describe('QuadletService#remove', () => {
 
     // last call should properly set final message
     expect(PROGRESS_REPORT.report).toHaveBeenLastCalledWith({
-      message: `Removed quadlet ${QUADLETS_MOCK[0].id}.`,
+      message: `Removed quadlet ${QUADLETS_MULE.id}.`,
     });
   });
 
@@ -779,5 +791,62 @@ describe('QuadletService#writeIntoMachine', () => {
 
     expect(PODMAN_WORKER_MOCK.write).toHaveBeenCalledWith('/home/user/bar.yaml', 'dummy-content');
     expect(SPECIFIERS_MOCK.expand).toHaveBeenCalledExactlyOnceWith(WSL_RUNNING_PROVIDER_CONNECTION_MOCK, '%h/bar.yaml');
+  });
+});
+
+describe('QuadletService events', () => {
+  let eventEmitter: (connections: any[]) => void;
+
+  beforeEach(() => {
+    // Mock the event method to capture the callback
+    vi.mocked(PROVIDER_SERVICE_MOCK.event).mockImplementation(callback => {
+      eventEmitter = callback;
+      return { dispose: vi.fn() };
+    });
+  });
+
+  test('should remove quadlets when provider status changes to stopped', async () => {
+    const quadlet = getQuadletService();
+    await quadlet.init(); // Initialize QuadletService to register the event listener
+    await quadlet.collectPodmanQuadlet(); // Collect quadlets for the running machine
+
+    // Ensure quadlets are present initially
+    expect(quadlet.all()).toHaveLength(5);
+
+    // Simulate provider service emitting an event with the machine now stopped
+    eventEmitter([PROVIDER_SERVICE_MOCK.toProviderContainerConnectionDetailedInfo(WSL_STOPPED_PROVIDER_CONNECTION_MOCK)]);
+
+    // Check that quadlets for the stopped machine are removed
+    expect(quadlet.all()).toHaveLength(0);
+  });
+
+  test('should not remove quadlets if provider is still running', async () => {
+    const quadlet = getQuadletService();
+    await quadlet.init(); // Initialize QuadletService to register the event listener
+    await quadlet.collectPodmanQuadlet(); // Collect quadlets for the running machine
+
+    // Ensure quadlets are present initially
+    expect(quadlet.all()).toHaveLength(5);
+
+    // Simulate provider service emitting an event with the machine still running
+    eventEmitter([PROVIDER_SERVICE_MOCK.toProviderContainerConnectionDetailedInfo(WSL_RUNNING_PROVIDER_CONNECTION_MOCK)]);
+
+    // Check that quadlets are still present
+    expect(quadlet.all()).toHaveLength(5);
+  });
+
+  test('should not remove quadlets if provider is not in the list', async () => {
+    const quadlet = getQuadletService();
+    await quadlet.init(); // Initialize QuadletService to register the event listener
+    await quadlet.collectPodmanQuadlet(); // Collect quadlets for the running machine
+
+    // Ensure quadlets are present initially
+    expect(quadlet.all()).toHaveLength(5);
+
+    // Simulate provider service emitting an event with NO providers
+    eventEmitter([]);
+
+    // Check that quadlets are removed
+    expect(quadlet.all()).toHaveLength(0);
   });
 });
