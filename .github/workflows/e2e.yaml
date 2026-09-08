@@ -103,30 +103,13 @@ jobs:
           echo "PD_VERSION=$PD_VERSION" >> $GITHUB_OUTPUT
           echo "Using @podman-desktop/api $PD_VERSION"
 
-      # Download Podman Desktop binary
-      - name: Download Podman Desktop (Linux)
-        if: runner.os == 'Linux'
-        shell: bash
-        env:
-          PD_VERSION: ${{ steps.pd-api-version.outputs.PD_VERSION }}
-        run: |
-          echo "Downloading PD desktop $PD_VERSION for Linux"
-          curl -sL "https://github.com/podman-desktop/podman-desktop/releases/download/v$PD_VERSION/podman-desktop-$PD_VERSION-x64.tar.gz" -o podman-desktop.tar.gz
-          mkdir podman-desktop-dir
-          tar -xzf podman-desktop.tar.gz -C podman-desktop-dir --strip-components=1
-          echo "PODMAN_DESKTOP_BINARY=$(pwd)/podman-desktop-dir/podman-desktop" >> $GITHUB_ENV
-
-      - name: Download and Install Podman Desktop (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        env:
-          PD_VERSION: ${{ steps.pd-api-version.outputs.PD_VERSION }}
-        run: |
-          Write-Host "Downloading PD desktop $env:PD_VERSION for Windows"
-          curl.exe -sL "https://github.com/podman-desktop/podman-desktop/releases/download/v$env:PD_VERSION/podman-desktop-$env:PD_VERSION-setup-x64.exe" -o podman-desktop-setup.exe
-          Start-Process -FilePath .\podman-desktop-setup.exe -ArgumentList '/S' -Wait
-          $binary = "$env:LOCALAPPDATA\Programs\Podman Desktop\Podman Desktop.exe"
-          echo "PODMAN_DESKTOP_BINARY=$binary" >> $env:GITHUB_ENV
+      # Download and install the Podman Desktop production binary (Linux & Windows)
+      - name: Install Podman Desktop
+        id: podman-desktop-install
+        uses: podman-desktop/gh-extensions-actions/.github/actions/podman-desktop-install@0abcba929bec797400b7fc1d6229f2907e1d4c1d # v0.2.0
+        with:
+          version: ${{ steps.pd-api-version.outputs.PD_VERSION }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # Install the quadlet extension
       - name: Download Quadlet Plugins
@@ -142,7 +125,7 @@ jobs:
           ELECTRON_DISABLE_SANDBOX: '1'
           NODE_OPTIONS: --no-experimental-strip-types
           DEBUGGING_PORT: 9222
-          PODMAN_DESKTOP_BINARY: ${{ env.PODMAN_DESKTOP_BINARY }}
+          PODMAN_DESKTOP_BINARY: ${{ steps.podman-desktop-install.outputs.binary }}
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
