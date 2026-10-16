@@ -2,11 +2,13 @@
   "name": "quadlet",
   "displayName": "Podman Quadlet",
   "description": "Manage, generate Podman Quadlet",
-  "version": "0.13.0-next",
+  "version": "0.14.0-next",
   "icon": "icon.png",
   "publisher": "podman-desktop",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": "https://github.com/podman-desktop/extension-podman-quadlet",
+  "homepage": "https://github.com/podman-desktop/extension-podman-quadlet#readme",
   "engines": {
     "podman-desktop": ">=1.22.0"
   },
@@ -54,17 +56,62 @@
           "title": "Generate Quadlet"
         }
       ],
+      "dashboard/image": [
+        {
+          "command": "podlet.generate.image",
+          "title": "Generate Quadlet",
+          "icon": "fas fa-hammer"
+        }
+      ],
+      "dashboard/pod": [
+        {
+          "command": "podlet.generate.pod",
+          "title": "Generate Quadlet",
+          "icon": "fas fa-hammer"
+        }
+      ],
+      "dashboard/volume": [
+        {
+          "command": "podlet.generate.volume",
+          "title": "Generate Quadlet",
+          "icon": "fas fa-hammer"
+        }
+      ],
+      "dashboard/network": [
+        {
+          "command": "podlet.generate.network",
+          "title": "Generate Quadlet",
+          "icon": "fas fa-hammer"
+        }
+      ],
       "dashboard/compose": [
         {
           "command": "podlet.compose",
-          "title": "Generate Quadlet"
+          "title": "Generate Quadlet",
+          "icon": "fas fa-hammer"
         }
       ]
     },
     "commands": [
       {
         "command": "podlet.generate.container",
-        "title": "Podlet: generate"
+        "title": "Podlet: generate container quadlet"
+      },
+      {
+        "command": "podlet.generate.image",
+        "title": "Podlet: generate image quadlet"
+      },
+      {
+        "command": "podlet.generate.pod",
+        "title": "Podlet: generate pod quadlet"
+      },
+      {
+        "command": "podlet.generate.volume",
+        "title": "Podlet: generate volume quadlet"
+      },
+      {
+        "command": "podlet.generate.network",
+        "title": "Podlet: generate network quadlet"
       },
       {
         "command": "podlet.compose",
@@ -74,22 +121,22 @@
   },
   "devDependencies": {
     "@podman-desktop/quadlet-extension-core-api": "workspace:^",
-    "@podman-desktop/api": "^1.26.2",
-    "@podman-desktop/podman-extension-api": "^1.26.1",
+    "@podman-desktop/api": "^1.29.1",
+    "@podman-desktop/podman-extension-api": "^1.29.1",
     "@types/node": "^24",
-    "@types/ssh2": "^1.15.5",
+    "@types/ssh2": "^1.15.6",
     "@types/ssh2-sftp-client": "^9.0.6",
-    "prettier": "^3.8.3",
-    "typescript": "5.9.3",
-    "vite": "^8.0.10",
-    "vitest": "^4.1.5",
+    "prettier": "^3.9.10",
+    "typescript": "6.0.3",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.4",
     "@codecov/vite-plugin": "^2.0.1",
     "@types/js-yaml": "^4.0.9"
   },
   "dependencies": {
     "js-ini": "^1.6.0",
-    "semver": "^7.7.4",
-    "js-yaml": "^4.1.1",
+    "semver": "^7.8.5",
+    "js-yaml": "^5.4.3",
     "podlet-js": "workspace:^",
     "ssh2": "^1.17.0",
     "ssh2-sftp-client": "^12.1.1"

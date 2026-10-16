@@ -19,6 +19,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type {
   CancellationToken,
+  Disposable,
   env,
   Progress,
   ProviderContainerConnection,
@@ -35,6 +36,7 @@ import type { SystemdService } from '/@/services/systemd-service';
 import { QuadletService } from '/@/services/quadlet-service';
 import { QuadletDryRunParser } from '/@/utils/parsers/quadlet-dryrun-parser';
 import type {
+  ProviderContainerConnectionDetailedInfo,
   Quadlet,
   ServiceQuadlet,
   TemplateQuadlet,
@@ -61,6 +63,7 @@ const WSL_RUNNING_PROVIDER_CONNECTION_MOCK: ProviderContainerConnection = {
 
 // Mock for dependencies injection (constructor)
 const PROVIDER_SERVICE_MOCK: ProviderService = {
+  event: vi.fn(),
   getContainerConnections: vi.fn(),
   getProviderContainerConnection: vi.fn(),
   toProviderContainerConnectionDetailedInfo: vi.fn(),
@@ -77,6 +80,7 @@ const PODMAN_WORKER_MOCK: PodmanWorker = {
   exec: vi.fn(),
   systemctlExec: vi.fn(),
   quadletExec: vi.fn(),
+  isRootless: vi.fn(),
 } as unknown as PodmanWorker;
 
 const SYSTEMD_SERVICE_MOCK: SystemdService = {
@@ -185,6 +189,8 @@ beforeEach(() => {
   vi.mocked(SPECIFIERS_MOCK.expand).mockImplementation(async (_, path) => path);
 
   vi.mocked(PODMAN_SERVICE_MOCK.getWorker).mockResolvedValue(PODMAN_WORKER_MOCK);
+  // default: rootless connection, matching the extension's pre-existing (--user only) behaviour
+  vi.mocked(PODMAN_WORKER_MOCK.isRootless).mockResolvedValue(true);
   vi.mocked(PODMAN_WORKER_MOCK.quadletExec).mockResolvedValue(RUN_RESULT_MOCK);
   vi.mocked(QuadletDryRunParser.prototype.parse).mockResolvedValue([
     QUADLET_MOCK,
@@ -298,18 +304,36 @@ describe('QuadletService#collectPodmanQuadlet', () => {
     });
   });
 
-  test('should use PodmanService#quadletExec to get quadlet dry-run', async () => {
+  test('should use PodmanService#quadletExec with -user for a rootless connection', async () => {
+    vi.mocked(PODMAN_WORKER_MOCK.isRootless).mockResolvedValue(true);
+
     const quadlet = getQuadletService();
     await quadlet.collectPodmanQuadlet();
 
     expect(PODMAN_SERVICE_MOCK.getWorker).toHaveBeenCalledWith(WSL_RUNNING_PROVIDER_CONNECTION_MOCK);
 
-    expect(PODMAN_WORKER_MOCK.quadletExec).toHaveBeenCalledWith({
+    expect(PODMAN_WORKER_MOCK.quadletExec).toHaveBeenCalledExactlyOnceWith({
       args: ['-dryrun', '-user'],
       token: CANCELLATION_TOKEN,
     });
 
     expect(quadlet.all()).toHaveLength(5);
+    expect(quadlet.all().every(q => q.admin === false)).toBe(true);
+  });
+
+  test('should use PodmanService#quadletExec without -user for a rootful connection', async () => {
+    vi.mocked(PODMAN_WORKER_MOCK.isRootless).mockResolvedValue(false);
+
+    const quadlet = getQuadletService();
+    await quadlet.collectPodmanQuadlet();
+
+    expect(PODMAN_WORKER_MOCK.quadletExec).toHaveBeenCalledExactlyOnceWith({
+      args: ['-dryrun'],
+      token: CANCELLATION_TOKEN,
+    });
+
+    expect(quadlet.all()).toHaveLength(5);
+    expect(quadlet.all().every(q => q.admin === true)).toBe(true);
   });
 });
 
@@ -358,7 +382,89 @@ describe('QuadletService#getQuadletVersion', () => {
   });
 });
 
+describe('QuadletService#init', () => {
+  const PROVIDERS_EVENT_DISPOSABLE: Disposable = {
+    dispose: vi.fn(),
+  };
+
+  const WSL_CONNECTION_INFO: ProviderContainerConnectionDetailedInfo = {
+    providerId: WSL_RUNNING_PROVIDER_CONNECTION_MOCK.providerId,
+    name: WSL_RUNNING_PROVIDER_CONNECTION_MOCK.connection.name,
+    status: 'started',
+    vmType: WSL_RUNNING_PROVIDER_CONNECTION_MOCK.connection.vmType,
+  };
+
+  let quadlet: QuadletServiceTest;
+  let listener: (connections: ProviderContainerConnectionDetailedInfo[]) => void;
+
+  beforeEach(async () => {
+    vi.mocked(PROVIDER_SERVICE_MOCK.event).mockReturnValue(PROVIDERS_EVENT_DISPOSABLE);
+
+    quadlet = getQuadletService();
+    await quadlet.init();
+    await quadlet.collectPodmanQuadlet();
+
+    expect(PROVIDER_SERVICE_MOCK.event).toHaveBeenCalledOnce();
+    listener = vi.mocked(PROVIDER_SERVICE_MOCK.event).mock.calls[0][0];
+
+    expect(quadlet.all()).not.toHaveLength(0);
+    vi.mocked(WEBVIEW_MOCK.postMessage).mockClear();
+  });
+
+  test('connection still started should keep its quadlets', () => {
+    listener([WSL_CONNECTION_INFO]);
+
+    expect(quadlet.all()).not.toHaveLength(0);
+    expect(quadlet.getSynchronisationInfo()).toHaveLength(1);
+    expect(WEBVIEW_MOCK.postMessage).not.toHaveBeenCalled();
+  });
+
+  test('connection stopped should remove its quadlets', () => {
+    listener([{ ...WSL_CONNECTION_INFO, status: 'stopped' }]);
+
+    expect(quadlet.all()).toHaveLength(0);
+    expect(quadlet.getSynchronisationInfo()).toHaveLength(0);
+    expect(WEBVIEW_MOCK.postMessage).toHaveBeenCalledWith({
+      id: Messages.UPDATE_QUADLETS,
+      body: [],
+    });
+  });
+
+  test('connection unregistered should remove its quadlets', () => {
+    listener([]);
+
+    expect(quadlet.all()).toHaveLength(0);
+    expect(quadlet.getSynchronisationInfo()).toHaveLength(0);
+  });
+
+  test('dispose should dispose the providers event listener', () => {
+    quadlet.dispose();
+
+    expect(PROVIDERS_EVENT_DISPOSABLE.dispose).toHaveBeenCalledOnce();
+  });
+});
+
 describe('QuadletService#refreshQuadletsStatuses', () => {
+  test('should skip connection not started', async () => {
+    const quadlet = getQuadletService();
+    await quadlet.collectPodmanQuadlet();
+    vi.mocked(SYSTEMD_SERVICE_MOCK.getActiveStatus).mockClear();
+    vi.mocked(PODMAN_SERVICE_MOCK.getWorker).mockClear();
+
+    vi.mocked(PROVIDER_SERVICE_MOCK.getProviderContainerConnection).mockReturnValue({
+      ...WSL_RUNNING_PROVIDER_CONNECTION_MOCK,
+      connection: {
+        ...WSL_RUNNING_PROVIDER_CONNECTION_MOCK.connection,
+        status: () => 'stopped',
+      },
+    });
+
+    await quadlet.refreshQuadletsStatuses();
+
+    expect(PODMAN_SERVICE_MOCK.getWorker).not.toHaveBeenCalled();
+    expect(SYSTEMD_SERVICE_MOCK.getActiveStatus).not.toHaveBeenCalled();
+  });
+
   test('should only provide quadlet with corresponding service and non-template', async () => {
     const quadlet = getQuadletService();
     await quadlet.collectPodmanQuadlet();

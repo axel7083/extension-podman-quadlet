@@ -36,7 +36,7 @@ jobs:
     name: Build Extension Image
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build Image and Extract Files
         id: build-image
         run: |
@@ -47,7 +47,7 @@ jobs:
           podman rm -f $CONTAINER_ID
           podman rmi -f localhost/local_image:latest
       - name: Upload Quadlet Image Artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: quadlet-plugin
           path: output/plugins/
@@ -63,17 +63,14 @@ jobs:
     env:
       SKIP_INSTALLATION: true
       EXTENSION_PREINSTALLED: true
-      PODMAN_DESKTOP_ARGS: ${{ github.workspace }}/podman-desktop
-      # by default playwright cache browsers binaries in ~/.cache/ms-playwright on Linux and %USERPROFILE%\AppData\Local\ms-playwright on Windows
-      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/podman-desktop/pw-browsers
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # ==============================================
       # Installing Podman
       # ==============================================
       - name: Install Podman
-        uses: redhat-actions/podman-install@256b8c40fdcb0b494704d72e325ce635d255ff8e
+        uses: redhat-actions/podman-install@aea6ff44f2a4a82da13d22061ce73443a125925d
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           ubuntu-version: '24.04'
@@ -81,13 +78,13 @@ jobs:
       # ==============================================
       # Installing Podman Desktop
       # ==============================================
-      - uses: pnpm/action-setup@903f9c1a6ebcba6cf41d87230be49611ac97822e # v6.0.3
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         name: Install pnpm
         with:
           run_install: false
 
       # Install Node.js
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: 'pnpm'
@@ -102,48 +99,21 @@ jobs:
         shell: bash
         run: |
           # Using pnpm list to get the resolved version (E.g. getting 1.15.0 when ^1.15.0)
-          export PD_VERSION=$(pnpm list -C packages/backend/ --json | jq -r '.[0].devDependencies."@podman-desktop/api".version')
+          export PD_VERSION=$(pnpm why -C packages/backend "@podman-desktop/api" --json | jq -r '.[0].version')
           echo "PD_VERSION=$PD_VERSION" >> $GITHUB_OUTPUT
           echo "Using @podman-desktop/api $PD_VERSION"
 
-      # Check cache for existing podman-desktop
-      - name: Cache Podman Desktop
-        id: cache-pd
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      # Download and install the Podman Desktop production binary (Linux & Windows)
+      - name: Install Podman Desktop
+        id: podman-desktop-install
+        uses: podman-desktop/gh-extensions-actions/.github/actions/podman-desktop-install@e59cd52b942e8dfcc187293c5d8e9f3831c7ac0c # v0.11.0
         with:
-          path: ${{ github.workspace }}/podman-desktop
-          key: pd-${{ steps.pd-api-version.outputs.PD_VERSION }}-${{ runner.os }}
-
-      # Download Podman Desktop repository based on version defined in package.json
-      - name: Download Podman Desktop
-        if: steps.cache-pd.outputs.cache-hit != 'true'
-        shell: bash
-        env:
-          PD_VERSION: ${{ steps.pd-api-version.outputs.PD_VERSION }}
-        run: |
-          echo "Downloading PD desktop to ${{ github.workspace }}/podman-desktop"
-          # Stable release are available podman-desktop/podman-desktop
-          # Prerelease are available under podman-desktop/prereleases
-          if [[ "$PD_VERSION" =~ - ]]; then
-            curl -sL "https://github.com/podman-desktop/prereleases/archive/refs/tags/v$PD_VERSION.tar.gz" | tar xvz
-          else
-            curl -sL "https://github.com/podman-desktop/podman-desktop/archive/refs/tags/v$PD_VERSION.tar.gz" | tar xvz
-          fi
-          # Move the extracted folder to the podman-desktop folder
-          mv podman-desktop-$PD_VERSION/ podman-desktop/
-
-      # Install and build podman-desktop
-      - name: Install pnpm deps and build Podman Desktop
-        if: steps.cache-pd.outputs.cache-hit != 'true'
-        shell: bash
-        working-directory: ${{ github.workspace }}/podman-desktop
-        run: |
-          pnpm install
-          pnpm test:e2e:build
+          version: ${{ steps.pd-api-version.outputs.PD_VERSION }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # Install the quadlet extension
       - name: Download Quadlet Plugins
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: quadlet-plugin
           path: tests/playwright/tests/playwright/output/pd-extension-quadlet-tests/plugins/
@@ -154,8 +124,10 @@ jobs:
         env:
           ELECTRON_DISABLE_SANDBOX: '1'
           NODE_OPTIONS: --no-experimental-strip-types
+          DEBUGGING_PORT: 9222
+          PODMAN_DESKTOP_BINARY: ${{ steps.podman-desktop-install.outputs.binary }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: e2e-results-${{ matrix.os }}
@@ -164,7 +136,7 @@ jobs:
             tests/playwright/tests/
 
       - name: Upload screenshots
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-screenshots-${{ matrix.os }}
           path: tests/playwright/screenshots/
@@ -174,20 +146,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: e2e
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: pnpm/action-setup@903f9c1a6ebcba6cf41d87230be49611ac97822e # v6.0.3
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         name: Install pnpm
         with:
           run_install: false
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: 'pnpm'
 
       - name: Download all screenshots
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: e2e-screenshots-*
           path: tests/playwright/screenshots

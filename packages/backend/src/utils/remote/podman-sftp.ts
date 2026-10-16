@@ -15,25 +15,27 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import type { Disposable } from '@podman-desktop/api';
 import type { ConnectConfig } from 'ssh2';
 import SftpClient from 'ssh2-sftp-client';
 import { dirname } from 'node:path/posix';
-import { ConnectionHandler } from '/@/utils/remote/connection-handler';
 
-export class PodmanSFTP extends ConnectionHandler {
+/**
+ * Permissions for newly created files (same as `podman quadlet install`)
+ */
+export const DEFAULT_FILE_MODE = 0o644;
+
+export class PodmanSFTP implements Disposable {
   #sshConfig: ConnectConfig;
   #client: SftpClient;
   #connected: boolean = false;
 
   constructor(sshConfig: ConnectConfig) {
-    super();
     this.#sshConfig = sshConfig;
     this.#client = new SftpClient();
   }
 
-  override dispose(): void {
-    super.dispose();
-
+  dispose(): void {
     this.#client.end().catch(console.error);
     this.#connected = false;
   }
@@ -59,13 +61,11 @@ export class PodmanSFTP extends ConnectionHandler {
     this.#client.on('end', () => {
       console.warn('connection ended by remote host');
       this.#connected = false;
-      this.handleReconnect();
     });
 
     this.#client.on('close', () => {
       console.warn('connection closed by remote host');
       this.#connected = false;
-      this.handleReconnect();
     });
 
     return this.#connected;
@@ -100,8 +100,23 @@ export class PodmanSFTP extends ConnectionHandler {
 
     // create parent directory
     await this.#client.mkdir(dirname(resolved), true);
+    // ssh2 always chmods the file after opening it (0o666 by default), so the mode must be specified
+    const mode = await this.getMode(resolved);
     // put the file
-    await this.#client.put(Buffer.from(content, 'utf8'), resolved);
+    await this.#client.put(Buffer.from(content, 'utf8'), resolved, { writeStreamOptions: { mode } });
+  }
+
+  /**
+   * Returns the permissions to use when writing the given (resolved) path:
+   * the ones of the existing file if any, {@link DEFAULT_FILE_MODE} otherwise.
+   */
+  protected async getMode(resolved: string): Promise<number> {
+    const exists = await this.#client.exists(resolved);
+    if (!exists) return DEFAULT_FILE_MODE;
+
+    const { mode } = await this.#client.stat(resolved);
+    // keep the permission bits only (drop the file type)
+    return mode & 0o777;
   }
 
   async rm(path: string): Promise<void> {

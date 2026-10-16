@@ -4,8 +4,11 @@
 import type { AsyncInit } from '/@/utils/async-init';
 import type { Disposable, WebviewPanel } from '@podman-desktop/api';
 import { Publisher } from '/@/utils/publisher';
-import { Messages, QuadletType } from '@podman-desktop/quadlet-extension-core-api';
-import type { ProviderContainerConnectionIdentifierInfo } from '@podman-desktop/quadlet-extension-core-api';
+import { Messages } from '@podman-desktop/quadlet-extension-core-api';
+import type {
+  ProviderContainerConnectionIdentifierInfo,
+  QuadletType,
+} from '@podman-desktop/quadlet-extension-core-api';
 
 interface Dependencies {
   panel: WebviewPanel;
@@ -40,18 +43,22 @@ export class RoutingService extends Publisher<string | undefined> implements Dis
   }
 
   async openQuadletCompose(filepath: string): Promise<void> {
-    return this.write(`/quadlets/compose?filepath=${filepath}`);
+    const search = new URLSearchParams({
+      filepath,
+    });
+    return this.write(`/quadlets/compose?${search.toString()}`);
   }
 
-  async openQuadletCreateContainer(
+  async openQuadletGenerate(
     provider: ProviderContainerConnectionIdentifierInfo,
-    containerId: string,
+    quadletType: QuadletType,
+    resourceId: string,
   ): Promise<void> {
     const search = new URLSearchParams({
       providerId: provider.providerId,
       connection: provider.name,
-      resourceId: containerId,
-      quadletType: QuadletType.CONTAINER,
+      resourceId,
+      quadletType,
     });
     return this.write(`/quadlets/generate?${search.toString()}`);
   }
