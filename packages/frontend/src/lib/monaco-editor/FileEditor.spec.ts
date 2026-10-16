@@ -126,6 +126,28 @@ test('expect result from quadletAPI#getKubeYAML to be displayed in monaco editor
   });
 });
 
+test.each([
+  ['/mnt/foo/bar.yaml', 'yaml'],
+  ['/mnt/foo/bar.yml', 'yaml'],
+  ['/mnt/foo/web.env', 'ini'],
+  ['/mnt/foo/.env', 'ini'],
+])('expect %s to use the %s language', async (path, language) => {
+  render(FileEditor, {
+    connection: PODMAN_MACHINE_DEFAULT,
+    path,
+    loading: false,
+  });
+
+  await vi.waitFor(() => {
+    expect(MonacoEditor).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        language,
+      }),
+    );
+  });
+});
+
 test('expect error from quadletAPI#getKubeYAML to be displayed', async () => {
   vi.mocked(quadletAPI.readIntoMachine).mockRejectedValue(new Error('Dummy foo error'));
 

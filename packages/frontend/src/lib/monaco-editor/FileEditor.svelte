@@ -18,12 +18,19 @@ let { path, connection, loading = $bindable() }: Props = $props();
 let originalContent: string | undefined = $state(undefined);
 let currentContent: string | undefined = $state(undefined);
 
+// extensions Monaco does not know, mapped to the closest language it supports
+const LANGUAGE_ALIASES: Record<string, string> = {
+  env: 'ini',
+  yml: 'yaml',
+};
+
 let language: string = $derived.by(() => {
   const pathParts = path.split('/');
   const filename = pathParts[pathParts.length - 1];
 
   const filenameParts = filename.split('.');
-  return filenameParts[filenameParts.length - 1];
+  const extension = filenameParts[filenameParts.length - 1];
+  return LANGUAGE_ALIASES[extension] ?? extension;
 });
 
 let error: string | undefined = $state(undefined);
