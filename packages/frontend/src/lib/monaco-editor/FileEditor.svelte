@@ -1,5 +1,6 @@
 <script lang="ts">
 import MonacoEditor from '/@/lib/monaco-editor/MonacoEditor.svelte';
+import { getLanguage } from '/@/lib/monaco-editor/language';
 import { quadletAPI } from '/@/api/client';
 import { onMount } from 'svelte';
 import { Button, ErrorMessage } from '@podman-desktop/ui-svelte';
@@ -18,13 +19,7 @@ let { path, connection, loading = $bindable() }: Props = $props();
 let originalContent: string | undefined = $state(undefined);
 let currentContent: string | undefined = $state(undefined);
 
-let language: string = $derived.by(() => {
-  const pathParts = path.split('/');
-  const filename = pathParts[pathParts.length - 1];
-
-  const filenameParts = filename.split('.');
-  return filenameParts[filenameParts.length - 1];
-});
+let language: string = $derived(getLanguage(path));
 
 let error: string | undefined = $state(undefined);
 let contentChanged: boolean = $derived(originalContent !== currentContent);

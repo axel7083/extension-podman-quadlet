@@ -19,6 +19,7 @@ import '@testing-library/jest-dom/vitest';
 
 import { beforeEach, test, vi, expect } from 'vitest';
 import { MonacoManager } from '/@/lib/monaco-editor/monaco';
+import { languages } from 'monaco-editor';
 import type { editor } from 'monaco-editor';
 
 const BG_BLACK_COLOR = '#000000';
@@ -33,10 +34,18 @@ vi.mock(import('monaco-editor'), () => ({
   editor: {
     defineTheme: vi.fn(),
   } as unknown as typeof editor,
+  languages: {
+    getLanguages: vi.fn(),
+    register: vi.fn(),
+    setLanguageConfiguration: vi.fn(),
+    setMonarchTokensProvider: vi.fn(),
+  },
 }));
 
 beforeEach(() => {
   vi.resetAllMocks();
+  MonacoManager['monaco'] = undefined;
+  vi.mocked(languages.getLanguages).mockReturnValue([]);
 
   const APP = document.createElement('div');
   APP.setAttribute('id', 'app');
@@ -57,4 +66,18 @@ test('importing monaco should register theme', async () => {
       }),
     }),
   );
+});
+
+test('importing monaco should register dotenv language', async () => {
+  const monaco = await MonacoManager.getMonaco();
+
+  expect(monaco.languages.register).toHaveBeenCalledWith({ id: 'dotenv' });
+  expect(monaco.languages.setMonarchTokensProvider).toHaveBeenCalledWith('dotenv', expect.anything());
+});
+
+test('dotenv language should not be registered twice', async () => {
+  vi.mocked(languages.getLanguages).mockReturnValue([{ id: 'dotenv' }]);
+  await MonacoManager.getMonaco();
+
+  expect(languages.register).not.toHaveBeenCalled();
 });

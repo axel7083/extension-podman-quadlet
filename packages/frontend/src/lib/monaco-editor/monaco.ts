@@ -8,6 +8,7 @@ export class MonacoManager {
 
     // import monaco editor dynamically (includes all bundled languages)
     this.monaco = await import('monaco-editor');
+    this.registerDotenv();
     this.registerTheme();
 
     // return the full monaco
@@ -16,6 +17,44 @@ export class MonacoManager {
 
   public static getThemeName(): string {
     return 'podmanDesktopTheme';
+  }
+
+  protected static registerDotenv(): void {
+    if (!MonacoManager.monaco) throw new Error('cannot register language if monaco is not imported');
+    const languages = MonacoManager.monaco.languages;
+
+    if (languages.getLanguages().some(lang => lang.id === 'dotenv')) return;
+
+    languages.register({ id: 'dotenv' });
+    languages.setLanguageConfiguration('dotenv', { comments: { lineComment: '#' } });
+    languages.setMonarchTokensProvider('dotenv', {
+      tokenizer: {
+        root: [
+          [/^\s*#.*$/, 'comment'],
+          [/^\s*export\b/, 'keyword'],
+          [/^\s*[\w.-]+/, 'variable'],
+          [/=/, { token: 'delimiter', next: '@value' }],
+        ],
+        value: [
+          [/$/, { token: '', next: '@pop' }],
+          [/\s#.*$/, 'comment'],
+          [/\$\{[^}]*\}/, 'variable.predefined'],
+          [/\$\w+/, 'variable.predefined'],
+          [/"/, { token: 'string', next: '@dquote' }],
+          [/'[^']*'/, 'string'],
+          [/[^"'$\s]+/, 'string'],
+          [/\s+/, ''],
+        ],
+        dquote: [
+          [/\$\{[^}]*\}/, 'variable.predefined'],
+          [/\$\w+/, 'variable.predefined'],
+          [/\\./, 'string.escape'],
+          [/[^"\\$]+/, 'string'],
+          [/\$/, 'string'],
+          [/"/, { token: 'string', next: '@pop' }],
+        ],
+      },
+    });
   }
 
   protected static registerTheme(): void {
