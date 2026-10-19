@@ -208,3 +208,15 @@ test('expect save button to be enabled when content is updated', async () => {
     });
   });
 });
+
+test('expect env files to use ini language', async () => {
+  render(FileEditor, {
+    connection: PODMAN_MACHINE_DEFAULT,
+    path: '/mnt/foo/app.env',
+    loading: false,
+  });
+
+  await vi.waitFor(() => {
+    expect(MonacoEditor).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ language: 'ini' }));
+  });
+});
