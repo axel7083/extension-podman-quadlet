@@ -21,7 +21,7 @@ import '@testing-library/jest-dom/vitest';
 import { render } from '@testing-library/svelte';
 import { beforeEach, test, vi, expect, describe } from 'vitest';
 import MonacoEditor from '/@/lib/monaco-editor/MonacoEditor.svelte';
-import { editor } from 'monaco-editor';
+import { editor, languages } from 'monaco-editor';
 
 /**
  * mock all monaco core component
@@ -34,6 +34,12 @@ vi.mock(import('monaco-editor'), () => ({
     defineTheme: vi.fn(),
     create: vi.fn(),
   } as unknown as typeof editor,
+  languages: {
+    getLanguages: vi.fn().mockReturnValue([]),
+    register: vi.fn(),
+    setLanguageConfiguration: vi.fn(),
+    setMonarchTokensProvider: vi.fn(),
+  },
 }));
 
 const EDITOR_MOCK: editor.IStandaloneCodeEditor = {
@@ -46,6 +52,7 @@ const BG_BLACK_COLOR = '#000000';
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(languages.getLanguages).mockReturnValue([]);
 
   const APP = document.createElement('div');
   APP.setAttribute('id', 'app');
